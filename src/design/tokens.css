@@ -1,0 +1,184 @@
+/*
+ * Zycus CodeArena — design tokens.  THE ONLY FILE THAT DEFINES COLORS.
+ *
+ * Brand values were extracted from https://www.zycus.com on 2026-10-09 (see BRAND_SOURCES.md for the
+ * source of every value). Marketing corrections are made here and nowhere else. Tailwind's default
+ * palette is disabled (see index.css), so components cannot use colors that are not defined below.
+ *
+ * Contrast notes (WCAG 2.2): gold, green, teal and cyan fail as text on white — accents/icons only.
+ */
+:root {
+  /* ── Brand: navy (site --zy-primary family) ─────────────────────────────── */
+  --zy-navy-950: #001440; /* announcement bar background */
+  --zy-navy-900: #0b1f3f; /* --zy-primary / --zy-bg-dark */
+  --zy-navy-800: #002d72; /* nav controls, Merlin gradient stop */
+  --zy-navy-700: #1a3a6b; /* --zy-primary-light */
+
+  /* ── Brand: blue (site --zy-accent family) ──────────────────────────────── */
+  --zy-blue-700: #002a8c; /* --zy-accent-dark  (hover/pressed) */
+  --zy-blue-650: #003da5; /* page titles (h1 "ABOUT US") */
+  --zy-blue-600: #0036b0; /* --zy-accent  (primary action) */
+  --zy-blue-500: #0759e6; /* gradient end, highlights */
+  --zy-blue-400: #2575fc; /* Merlin gradient stop */
+  --zy-blue-200: #beddff; /* section gradient end on /company */
+  --zy-blue-100: #e3eeff; /* DERIVED: selected/hover tint (not on site) */
+  --zy-blue-50: #f6faff; /* section background on /company */
+
+  /* ── Brand accents (decorative only) ────────────────────────────────────── */
+  --zy-cyan-500: #0095c8;
+  --zy-teal-400: #00c7b1;
+  --zy-gold-500: #f5a623; /* --zy-gold */
+  --zy-green-500: #2ecc71; /* --zy-green */
+  --zy-cyan-glow: #00f3ff; /* announcement bar text on navy-950 */
+
+  /* ── Neutrals ───────────────────────────────────────────────────────────── */
+  --zy-white: #ffffff; /* --zy-bg */
+  --zy-gray-25: #f7f9fc; /* --zy-bg-light */
+  --zy-gray-50: #f8f9fa;
+  --zy-gray-75: #eff2f5;
+  --zy-gray-100: #ecf0f2; /* theme global color 4 */
+  --zy-gray-200: #e2e8f0; /* --zy-border */
+  --zy-gray-300: #cbd5e1; /* DERIVED: strong border */
+  --zy-gray-400: #94a3b8; /* DERIVED: disabled/placeholder icon (non-text) */
+  --zy-slate-600: #526670; /* theme global color 3 — muted text, 6.01:1 */
+  --zy-gray-800: #2d2d2d; /* --zy-text, 13.77:1 */
+  --zy-gray-900: #101010;
+
+  /* ── Semantic (DERIVED, not brand — chosen for WCAG AA) ─────────────────── */
+  --zy-success-700: #157347;
+  --zy-success-50: #e8f5ee;
+  --zy-warning-700: #8a5a00;
+  --zy-warning-50: #fff4e0;
+  --zy-danger-700: #b42318;
+  --zy-danger-200: #f4c7c3;
+  --zy-danger-50: #fef3f2;
+
+  /* ── Purpose tokens (components use these) ──────────────────────────────── */
+  --surface: var(--zy-white);
+  --surface-app: var(--zy-gray-25);
+  --surface-sunken: var(--zy-gray-75);
+  --surface-tint: var(--zy-blue-50);
+  --surface-selected: var(--zy-blue-100);
+  --surface-inverse: var(--zy-navy-900);
+
+  --text: var(--zy-gray-800);
+  --text-strong: var(--zy-navy-900);
+  --text-muted: var(--zy-slate-600);
+  --text-title: var(--zy-blue-650);
+  --text-link: var(--zy-blue-600);
+  --text-inverse: var(--zy-white);
+  --text-on-primary: var(--zy-white);
+
+  --border: var(--zy-gray-200);
+  --border-strong: var(--zy-gray-300);
+
+  --primary: var(--zy-blue-600);
+  --primary-hover: var(--zy-blue-700);
+  --primary-soft: var(--zy-blue-100);
+
+  --success: var(--zy-success-700);
+  --success-surface: var(--zy-success-50);
+  --warning: var(--zy-warning-700);
+  --warning-fill: var(--zy-gold-500);
+  --warning-surface: var(--zy-warning-50);
+  --danger: var(--zy-danger-700);
+  --danger-border: var(--zy-danger-200);
+  --danger-surface: var(--zy-danger-50);
+  --live: var(--zy-green-500);
+
+  --success-fill: var(--zy-success-700); /* filled badges/steps with white text */
+  --danger-fill: var(--zy-danger-700);
+  --info-border: var(--zy-blue-200);
+  --separator-hover: var(--zy-blue-200);
+  --icon-subtle: var(--zy-gray-400); /* non-text icons only */
+  --neutral-dot: var(--zy-slate-600);
+  --selection-bg: var(--zy-blue-200);
+  --selection-text: var(--zy-navy-900);
+  --logo-filter: none;
+
+  --focus-ring: 0 0 0 3px rgb(0 54 176 / 0.28); /* --zy-accent-glow, strengthened for visibility */
+  --overlay: rgb(11 31 63 / 0.62); /* navy-900 scrim for blocking overlays */
+
+  --gradient-hero: linear-gradient(180deg, #0546d9 0%, #00267d 100%);
+  --gradient-spectrum: linear-gradient(
+    245deg,
+    #00c7b1 0%,
+    #2575fc 18%,
+    #0035af 32%,
+    #0095c8 48%,
+    #0067b9 65%,
+    #002d72 82%,
+    #003da5 100%
+  );
+
+  /* ── Elevation ──────────────────────────────────────────────────────────── */
+  --zy-shadow-sm: 0 1px 2px rgb(11 31 63 / 0.06), 0 1px 3px rgb(11 31 63 / 0.08);
+  --zy-shadow-md: 0 2px 4px rgb(11 31 63 / 0.06), 0 6px 16px rgb(11 31 63 / 0.08);
+  --zy-shadow-lg: 0 8px 24px rgb(11 31 63 / 0.12), 0 2px 6px rgb(11 31 63 / 0.08);
+
+  /* ── Shape ──────────────────────────────────────────────────────────────── */
+  --zy-radius-sm: 6px;
+  --zy-radius-md: 8px;
+  --zy-radius-lg: 12px;
+  --zy-radius-xl: 16px;
+  --zy-radius-pill: 50px; /* zycus.com CTA buttons */
+
+  color-scheme: light;
+}
+
+/*
+ * Dark theme — WORKSPACE ONLY (the editor's light/dark switch; every other page is always light).
+ * Neutral charcoal surfaces in the style of popular coding sites such as LeetCode (#1a1a1a page,
+ * #282828 panels, #3e3e3e dividers) rather than brand navy, with the Zycus blue kept as the accent.
+ * Primary buttons are light blue with near-black text so both labels and blue text on dark
+ * surfaces meet WCAG AA (4.5:1; ratios noted below). The logo is shown reversed (white) until
+ * Marketing supplies an official reversed logo (see BRAND_SOURCES.md).
+ */
+:root[data-theme='dark'] {
+  --surface: #282828;
+  --surface-app: #1a1a1a;
+  --surface-sunken: #333333;
+  --surface-tint: #1f2b3a;
+  --surface-selected: #3a3a3a;
+
+  --text: #dcdcdc; /* 10.8:1 on --surface */
+  --text-strong: #f5f5f5;
+  --text-muted: #a3a3a3; /* 5.8:1 on --surface, 5.0:1 on --surface-sunken */
+  --text-title: #f5f5f5;
+  --text-link: #6ea8ff; /* 6.1:1 */
+  --text-on-primary: #111111; /* 6.9:1 on --primary */
+
+  --border: #3e3e3e;
+  --border-strong: #555555;
+
+  --primary: #5c9dff; /* 5.4:1 as text on --surface */
+  --primary-hover: #7db1ff;
+  --primary-soft: #24344d;
+
+  --success: #2cbb5d; /* 5.9:1 */
+  --success-surface: #1f3a2a;
+  --warning: #ffc01e;
+  --warning-fill: #ffa116;
+  --warning-surface: #3d3218;
+  --danger: #ff6b66; /* 5.3:1 */
+  --danger-border: #6b302d;
+  --danger-surface: #3d2525;
+  --danger-fill: #d92d20; /* white text 4.8:1 */
+
+  --info-border: #2c4a73;
+  --separator-hover: #4a4a4a;
+  --icon-subtle: #6b6b6b;
+  --neutral-dot: #a3a3a3;
+  --selection-bg: #264f78;
+  --selection-text: #ffffff;
+  --logo-filter: brightness(0) invert(1);
+
+  --focus-ring: 0 0 0 3px rgb(92 157 255 / 0.5);
+  --overlay: rgb(0 0 0 / 0.72);
+
+  --zy-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 3px rgb(0 0 0 / 0.3);
+  --zy-shadow-md: 0 2px 4px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.4);
+  --zy-shadow-lg: 0 8px 24px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.4);
+
+  color-scheme: dark;
+}

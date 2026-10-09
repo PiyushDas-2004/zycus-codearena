@@ -1,0 +1,195 @@
+<title>CodeArena Data Flow Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap">
+<style>
+/* Layout: one reading column with a brand header band; tables scroll inside their own containers. */
+:root {
+  --bg: #F7F9FC; --surface: #FFFFFF; --fg: #2D2D2D; --muted: #526670;
+  --heading: #0B1F3F; --accent: #0036B0; --border: #E2E8F0; --tint: #EEF3FB;
+  --ok: #157347; --warn: #8A5A00; --warn-bg: #FFF4E0; --ok-bg: #E8F5EE;
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  --spectrum: linear-gradient(90deg, #00C7B1, #2575FC, #0035AF, #0095C8, #0067B9, #002D72, #003DA5);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0A1322; --surface: #101C31; --fg: #E4E9F1; --muted: #A5B3C4;
+  --heading: #E8EEF9; --accent: #8FB0FF; --border: #24324A; --tint: #15264A;
+  --ok: #6FD39C; --warn: #F5C46B; --warn-bg: #33270F; --ok-bg: #12301F; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0A1322; --surface: #101C31; --fg: #E4E9F1; --muted: #A5B3C4;
+  --heading: #E8EEF9; --accent: #8FB0FF; --border: #24324A; --tint: #15264A;
+  --ok: #6FD39C; --warn: #F5C46B; --warn-bg: #33270F; --ok-bg: #12301F; color-scheme: dark }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-sans); font-size: 15px; line-height: 1.65; padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 920px; margin: 0 auto; display: grid; gap: 40px; }
+header.band { border-bottom: 1px solid var(--border); padding-block: 32px 24px; display: grid; gap: 12px; }
+.spectrum { height: 4px; border-radius: 0; background: var(--spectrum); margin-inline: -16px; }
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+h1 { font-weight: 300; font-size: clamp(28px, 4vw, 40px); line-height: 1.15; color: var(--accent); margin: 0; text-wrap: balance; }
+h2 { font-size: 20px; font-weight: 700; color: var(--heading); margin: 0 0 12px; text-wrap: balance; }
+h3 { font-size: 15px; font-weight: 700; color: var(--heading); margin: 0 0 6px; }
+p { margin: 0; max-width: 68ch; }
+section { display: grid; gap: 12px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: 13px; }
+.meta b { color: var(--fg); font-weight: 500; }
+.pill { display: inline-block; font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 50px; border: 1px solid var(--border); background: var(--surface); }
+.pill.draft { color: var(--warn); background: var(--warn-bg); border-color: transparent; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.fact { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; display: grid; gap: 2px; min-width: 0; }
+.fact .k { font-size: 12px; color: var(--muted); }
+.fact .v { font-size: 17px; font-weight: 700; color: var(--heading); font-variant-numeric: tabular-nums; }
+.tbl { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+th { font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.03em; background: var(--tint); }
+tr:last-child td { border-bottom: 0; }
+td.yes { color: var(--warn); font-weight: 500; }
+td.no { color: var(--ok); font-weight: 500; }
+code { font-family: var(--font-mono); font-size: 0.9em; background: var(--tint); padding: 1px 5px; border-radius: 4px; }
+.diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; overflow-x: auto; }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 72ch; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.cols > div { min-width: 0; }
+.never { background: var(--ok-bg); border-radius: 12px; padding: 16px 18px; }
+.never h3 { color: var(--ok); }
+footer { color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--border); padding-top: 16px; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="spectrum" aria-hidden="true"></div>
+<div class="wrap">
+  <header class="band">
+    <div class="eyebrow">Zycus CodeArena · Hands-On Engineering Assessment</div>
+    <h1>Data-flow summary for Zycus IT and InfoSec</h1>
+    <div class="meta">
+      <span class="pill draft">Draft v0.1, pending internal approval</span>
+      <span><b>Date</b> 9 Oct 2026</span>
+      <span><b>Owner</b> Piyush Das</span>
+      <span><b>Classification</b> Zycus Internal</span>
+    </div>
+    <p>CodeArena is Zycus's in-house replacement for HackerRank in hands-on hiring tests, starting with Lead React Native Developer. One candidate takes a proctored, 150-minute debugging test in the browser. Zycus interview panels then review the code, notes, keystroke replay and proctoring evidence. The platform runs entirely on free tiers, at ₹0 cost.</p>
+  </header>
+
+  <section aria-labelledby="facts">
+    <h2 id="facts">At a glance</h2>
+    <div class="facts">
+      <div class="fact"><span class="k">Data at rest</span><span class="v">India · Mumbai</span></div>
+      <div class="fact"><span class="k">Backend</span><span class="v">Supabase (ap-south-1)</span></div>
+      <div class="fact"><span class="k">Front-end hosting</span><span class="v">Cloudflare Pages</span></div>
+      <div class="fact"><span class="k">Staff sign-in</span><span class="v">Entra ID or allow-list</span></div>
+      <div class="fact"><span class="k">Candidate accounts</span><span class="v">None (one-time code)</span></div>
+      <div class="fact"><span class="k">Running cost</span><span class="v">₹0 / month</span></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="flow">
+    <h2 id="flow">How data moves</h2>
+    <div class="diagram">
+<pre class="mermaid">
+flowchart LR
+  CF["Cloudflare Pages<br/>static app files only"]
+  C["Candidate browser<br/>editor and proctoring<br/>face detection runs locally"]
+  S["Zycus staff browser<br/>admin portal"]
+  DB[("Supabase, Mumbai<br/>Postgres with row-level security")]
+  E["Microsoft Entra ID<br/>Zycus tenant, optional"]
+  CF -->|"app code"| C
+  CF -->|"app code"| S
+  C -->|"code, notes, events,<br/>low-res snapshots over HTTPS"| DB
+  S <-->|"staff sign-in, OIDC"| E
+  S <-->|"permission-checked queries,<br/>live monitor over HTTPS/WSS"| DB
+</pre>
+    </div>
+    <p>Candidate and staff browsers talk directly to the Supabase database API. Cloudflare only serves the application's static files and never sees candidate data. There is no other server in the path.</p>
+  </section>
+
+  <section aria-labelledby="systems">
+    <h2 id="systems">Systems involved</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Service</th><th>What it does</th><th>Region</th><th>Holds personal data</th><th>Account owner</th></tr></thead>
+      <tbody>
+        <tr><td>Supabase (Free)</td><td>Database, staff authentication, live updates, scheduled jobs</td><td>AWS ap-south-1, Mumbai</td><td class="yes">Yes</td><td>Zycus email account</td></tr>
+        <tr><td>Cloudflare Pages (Free)</td><td>Serves the static web app with strict security headers</td><td>Global CDN</td><td class="no">No (standard edge request logs only)</td><td>Zycus email account</td></tr>
+        <tr><td>Microsoft Entra ID (optional)</td><td>"Sign in with Microsoft" for Zycus staff, single-tenant</td><td>Zycus tenant</td><td class="no">Existing staff identity only</td><td>Zycus IT</td></tr>
+        <tr><td>GitHub (Zycus org)</td><td>Source code and CI</td><td>n/a</td><td class="no">No</td><td>Zycus org</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="inventory">
+    <h2 id="inventory">Data inventory</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Data</th><th>Source</th><th>Who can read it</th><th>Proposed retention</th></tr></thead>
+      <tbody>
+        <tr><td>Candidate name, email, role, experience, requisition ID</td><td>Entered by recruiter</td><td>Super Admin, Recruiter, assigned Reviewer</td><td>365 days (Legal to confirm)</td></tr>
+        <tr><td>Access code</td><td>Generated by the server</td><td>Stored as a hash only; plain code shown once to the recruiter</td><td>Until used or expired</td></tr>
+        <tr><td>Code, "Explain your fix" notes</td><td>Candidate</td><td>Super Admin, assigned Reviewer</td><td>365 days</td></tr>
+        <tr><td>Keystroke replay (edit changes and timestamps)</td><td>Candidate's editor</td><td>Super Admin, assigned Reviewer</td><td>365 days</td></tr>
+        <tr><td>Proctoring events (type, server time, duration)</td><td>Candidate's browser</td><td>Super Admin, Recruiter, assigned Reviewer</td><td>365 days</td></tr>
+        <tr><td>Webcam snapshots, 320×240 JPEG, about every 2.5 min and on each violation</td><td>Candidate's webcam</td><td>Super Admin, Recruiter, assigned Reviewer</td><td>90 days (Legal to confirm)</td></tr>
+        <tr><td>Consent record (text version, hash, server time)</td><td>Candidate</td><td>Super Admin</td><td>Kept with the candidate record</td></tr>
+        <tr><td>Browser and screen details</td><td>Candidate's browser</td><td>Staff</td><td>365 days</td></tr>
+        <tr><td>IP address</td><td>Request headers, used for rate limiting only</td><td>Not shown in any screen; stored hashed</td><td>24 hours</td></tr>
+        <tr><td>Staff actions (audit log)</td><td>Admin portal</td><td>Super Admin; append-only</td><td>365 days</td></tr>
+      </tbody>
+    </table></div>
+    <div class="never">
+      <h3>What the platform never does</h3>
+      <ul>
+        <li>No video is streamed or recorded. Face detection runs inside the candidate's browser, and only the face count (0, 1, 2 or more) is sent.</li>
+        <li>No audio is recorded. The optional microphone check measures loudness locally and is off by default.</li>
+        <li>No third-party analytics, tracking cookies or advertising scripts.</li>
+        <li>No external CDNs are loaded during a test. Fonts, the editor and the face model are served from the app's own domain.</li>
+        <li>Faces are never identified or matched against any database.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="access">
+    <h2 id="access">Who gets access</h2>
+    <div class="cols">
+      <div><h3>Zycus staff only</h3><p>To use the admin portal, staff must pass three checks. They sign in through the Zycus Entra tenant, or with an account a Super Admin created. Their email must be on a Zycus domain (including subdomains such as corpteam.zycus.com). They must appear on the platform's allow-list with a role. Anyone else who signs in sees "Access not granted" and gets no data.</p></div>
+      <div><h3>Roles</h3><p><b>Super Admin</b> manages configuration, questions and users. <b>Recruiter</b> invites candidates, issues access codes and monitors live tests. <b>Reviewer</b> scores only the candidates assigned to them. The database enforces these rules for every query, so the user interface cannot bypass them.</p></div>
+      <div><h3>Candidates</h3><p>Candidates have no accounts. A single-use access code plus their email opens one session, inside a time window the recruiter sets. Candidates can only reach their own test questions, and only after the test starts. Reference solutions, rubrics and other candidates' data are never sent to them.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="controls">
+    <h2 id="controls">Security controls</h2>
+    <ul>
+      <li>Row-level security on every table. Candidate writes go through validated database functions that check the session token and the server-side test clock.</li>
+      <li>Access codes and session tokens are stored only as SHA-256 hashes. Login attempts are rate-limited, and a new login invalidates the previous session.</li>
+      <li>All timestamps come from the server. Saves after time-up are rejected.</li>
+      <li>HTTPS only, with HSTS. Strict Content-Security-Policy, frame-ancestors none, X-Frame-Options DENY, nosniff, and camera, microphone and fullscreen permissions limited to the app's own origin.</li>
+      <li>Only the public "anon" API key ships in the browser. No secrets in the repository; gitleaks secret scanning runs before every commit and in CI; dependency audit runs on every build.</li>
+      <li>Append-only audit log of every admin, recruiter and reviewer action, including time extensions, force-submits and data deletions.</li>
+      <li>Data-subject requests: an admin can export or permanently delete one candidate's data in a single action, which is itself logged.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="asks">
+    <h2 id="asks">What we may ask IT for</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Request</th><th>Needed?</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td>Entra ID app registration, single-tenant</td><td>Optional, recommended</td><td>Enables "Sign in with Microsoft" for staff. Free in the existing tenant. Needs a redirect URI for the Supabase project and the <code>email</code> scope plus <code>xms_edov</code> optional claim. The client secret lasts at most 24 months and must be rotated.</td></tr>
+        <tr><td>DNS CNAME <code>codearena.zycus.com</code> → Cloudflare Pages</td><td>Optional</td><td>A friendlier URL. The app works on its <code>*.pages.dev</code> address without it. CAA records must allow Cloudflare's certificate authorities.</td></tr>
+        <tr><td>Network allow-listing for staff</td><td>If the proxy filters</td><td>Staff browsers need HTTPS and WebSocket access to <code>*.supabase.co</code> and to the app's domain.</td></tr>
+        <tr><td>InfoSec review of Supabase</td><td>Yes</td><td>Supabase publishes a DPA for all customers. Its SOC 2 Type 2 report is available only on paid plans (Team and above), which is a known gap for a ₹0 setup.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section aria-labelledby="limits">
+    <h2 id="limits">Known limitations</h2>
+    <ul>
+      <li>Browser-based proctoring is a strong deterrent, not a guarantee. It cannot prevent a second phone or a helper off-camera. Webcam snapshots, keystroke replay and the panel's follow-up discussion cover this gap.</li>
+      <li>Supabase's free plan pauses a project after about a week with no activity. A pre-test health check in the admin portal and an optional keep-alive ping prevent surprises; a test in progress counts as activity.</li>
+      <li>The free plan has no automatic database backups. Results are exported as PDF and ZIP after each assessment, and a manual monthly export is recommended.</li>
+      <li>India's DPDP Rules 2025 core obligations apply from about May 2027. The platform is designed to that standard now. Current obligations under the IT Act (SPDI Rules) and CERT-In's 6-hour incident reporting also apply. Zycus Legal owns the consent text and the retention periods.</li>
+    </ul>
+  </section>
+
+  <footer>© 2026 Zycus · Internal Hiring Assessment · Confidential. Draft prepared for internal review; the platform has not yet been built or deployed.</footer>
+</div>

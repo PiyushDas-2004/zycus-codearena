@@ -1,0 +1,43 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "c32fe8c1-9276-4190-9b2c-3c9b6509809f",
+  "slug": "spring-orders-debugging",
+  "title": "[SAMPLE] Fix the orders service (Spring Boot)",
+  "category": "Spring Boot debugging",
+  "role_tags": ["lead-react-native-developer", "full-stack-developer", "java-developer"],
+  "skill_tags": ["spring-boot", "spring-data-jpa", "transactions", "rest", "bean-validation"],
+  "difficulty": "medium",
+  "time_suggestion_minutes": 40,
+  "is_sample": true,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    { "path": "pom.xml", "language": "xml", "content": "@file:files/pom.xml" },
+    { "path": "src/main/resources/application.properties", "language": "properties", "content": "@file:files/src/main/resources/application.properties" },
+    { "path": "src/main/java/com/zycus/orders/web/OrderController.java", "language": "java", "content": "@file:files/src/main/java/com/zycus/orders/web/OrderController.java" },
+    { "path": "src/main/java/com/zycus/orders/service/OrderService.java", "language": "java", "content": "@file:files/src/main/java/com/zycus/orders/service/OrderService.java" },
+    { "path": "src/main/java/com/zycus/orders/repository/OrderRepository.java", "language": "java", "content": "@file:files/src/main/java/com/zycus/orders/repository/OrderRepository.java" },
+    { "path": "src/main/java/com/zycus/orders/domain/PurchaseOrder.java", "language": "java", "content": "@file:files/src/main/java/com/zycus/orders/domain/PurchaseOrder.java", "readonly": true },
+    { "path": "src/main/java/com/zycus/orders/web/dto/CreateOrderRequest.java", "language": "java", "content": "@file:files/src/main/java/com/zycus/orders/web/dto/CreateOrderRequest.java", "readonly": true },
+    { "path": "src/main/java/com/zycus/orders/web/dto/OrderResponse.java", "language": "java", "content": "@file:files/src/main/java/com/zycus/orders/web/dto/OrderResponse.java", "readonly": true },
+    { "path": "src/main/java/com/zycus/orders/web/ApiExceptionHandler.java", "language": "java", "content": "@file:files/src/main/java/com/zycus/orders/web/ApiExceptionHandler.java", "readonly": true },
+    { "path": "src/main/java/com/zycus/orders/inventory/InventoryClient.java", "language": "java", "content": "@file:files/src/main/java/com/zycus/orders/inventory/InventoryClient.java", "readonly": true }
+  ],
+  "rubric": [
+    { "key": "startup", "criterion": "Service starts again", "description": "Identifies that `ddl-auto=validate` fails against an empty in-memory database; uses create-drop for this profile or adds a schema (Flyway/schema.sql) and explains the choice.", "max_points": 4 },
+    { "key": "path_variable", "criterion": "GET by id works", "description": "Path variable name matches the URI template (`@PathVariable(\"orderId\") Long id` or rename).", "max_points": 4 },
+    { "key": "not_found", "criterion": "Unknown order returns 404", "description": "Replaces `Optional.get()` with `orElseThrow(() -> new OrderNotFoundException(id))` so the existing handler returns 404.", "max_points": 5 },
+    { "key": "validation", "criterion": "Invalid requests are rejected with 400", "description": "Replaces the bare jakarta.validation-api with spring-boot-starter-validation (provides Hibernate Validator) and explains why annotations were silently ignored.", "max_points": 5 },
+    { "key": "transaction", "criterion": "Order placement is atomic", "description": "Explains proxy-based @Transactional: private and self-invoked methods are not intercepted. Makes the public method transactional (or moves logic to another bean) so failed reservations roll back and status changes are flushed.", "max_points": 5 },
+    { "key": "explanation", "criterion": "Quality of the root-cause explanation", "description": "Clear, correct reasoning for each change; mentions how they'd test it.", "max_points": 2 }
+  ],
+  "reference_solution": {
+    "notes_md": "@file:solution/notes.md",
+    "files": [
+      { "path": "pom.xml", "content": "@file:solution/files/pom.xml" },
+      { "path": "src/main/resources/application.properties", "content": "@file:solution/files/src/main/resources/application.properties" },
+      { "path": "src/main/java/com/zycus/orders/web/OrderController.java", "content": "@file:solution/files/src/main/java/com/zycus/orders/web/OrderController.java" },
+      { "path": "src/main/java/com/zycus/orders/service/OrderService.java", "content": "@file:solution/files/src/main/java/com/zycus/orders/service/OrderService.java" }
+    ]
+  }
+}

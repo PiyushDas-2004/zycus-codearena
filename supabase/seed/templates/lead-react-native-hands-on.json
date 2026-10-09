@@ -1,0 +1,46 @@
+{
+  "format": "zycus-codearena/template@1",
+  "id": "704cf1f2-2916-4eb4-a7b6-cc9894509b41",
+  "slug": "lead-react-native-hands-on",
+  "name": "Lead React Native Developer – Hands-On",
+  "target_role": "Lead React Native Developer",
+  "description": "Four debugging tasks across a React Native app and a Spring Boot service. Questions 3 and 4 are placeholders until Zycus adds the final tasks.",
+  "duration_minutes": 150,
+  "instructions_md": "@file:lead-react-native-hands-on.instructions.md",
+  "proctoring": {
+    "fullscreen": { "enabled": true },
+    "keyboardLock": { "enabled": true },
+    "tabSwitch": { "enabled": true },
+    "windowBlur": { "enabled": true, "graceMs": 1500 },
+    "paste": { "enabled": true, "allowInternalClipboard": false },
+    "dragDrop": { "enabled": true },
+    "suspiciousInsert": { "enabled": true, "thresholdChars": 60 },
+    "typingCadence": { "enabled": true, "maxCharsPerSecond": 25 },
+    "copyProtection": { "enabled": true },
+    "blockedShortcuts": { "enabled": true },
+    "devtoolsHeuristic": { "enabled": true },
+    "multiTab": { "enabled": true },
+    "multiMonitor": { "enabled": true, "blockStartIfExtended": true, "pollMs": 5000 },
+    "webcam": { "enabled": true, "required": true, "snapshotIntervalSec": 150, "snapshotOnViolation": true },
+    "faceDetection": { "enabled": true, "intervalMs": 2000, "noFaceSeconds": 10, "multiFaceConsecutive": 2 },
+    "microphone": { "enabled": false, "loudDbfs": -20, "sustainSec": 3 },
+    "watermark": { "enabled": true, "opacity": 0.06 },
+    "keystrokeReplay": { "enabled": true }
+  },
+  "violation_policy": {
+    "warnOnOccurrences": 2,
+    "maxTotalViolations": 5,
+    "onLimit": "auto_submit",
+    "countedTypes": [
+      "tab_switch", "window_blur", "fullscreen_exit", "second_tab", "session_takeover",
+      "multi_monitor", "camera_off", "no_face", "multiple_faces"
+    ]
+  },
+  "question_slugs": [
+    "rn-catalogue-debugging",
+    "spring-orders-debugging",
+    "placeholder-question-3",
+    "placeholder-question-4"
+  ],
+  "is_active": true
+}

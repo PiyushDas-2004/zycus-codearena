@@ -1,0 +1,23 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "ad17df1c-902d-4b7f-9054-8f0bec4873e2",
+  "slug": "placeholder-question-4",
+  "title": "[SAMPLE] Placeholder question 4",
+  "category": "Placeholder",
+  "role_tags": ["lead-react-native-developer"],
+  "skill_tags": ["placeholder"],
+  "difficulty": "medium",
+  "time_suggestion_minutes": 35,
+  "is_sample": true,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    { "path": "README.md", "language": "markdown", "content": "@file:files/README.md" },
+    { "path": "src/main.ts", "language": "typescript", "content": "@file:files/src/main.ts" }
+  ],
+  "rubric": [
+    { "key": "correctness", "criterion": "Correctness", "description": "Replace with real criteria.", "max_points": 10 },
+    { "key": "explanation", "criterion": "Explanation", "description": "Replace with real criteria.", "max_points": 5 }
+  ],
+  "reference_solution": { "notes_md": "Placeholder: add the reference solution for the real question here.", "files": [] }
+}
