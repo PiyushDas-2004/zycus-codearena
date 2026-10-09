@@ -3,11 +3,9 @@
  * Workers are emitted by Vite as same-origin files.
  */
 import * as monaco from 'monaco-editor';
-import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
-import CssWorker from 'monaco-editor/language/css/css.worker.js?worker';
-import HtmlWorker from 'monaco-editor/language/html/html.worker.js?worker';
-import JsonWorker from 'monaco-editor/language/json/json.worker.js?worker';
-import TsWorker from 'monaco-editor/language/typescript/ts.worker.js?worker';
+import { monacoWorkerUrls as urls } from './workerUrls';
+
+const worker = (url: string, name: string) => new Worker(url, { type: 'module', name });
 
 let initialised = false;
 
@@ -17,11 +15,12 @@ export function setupMonaco(): typeof monaco {
 
   self.MonacoEnvironment = {
     getWorker(_id: string, label: string) {
-      if (label === 'json') return new JsonWorker();
-      if (label === 'css' || label === 'scss' || label === 'less') return new CssWorker();
-      if (label === 'html' || label === 'handlebars' || label === 'razor') return new HtmlWorker();
-      if (label === 'typescript' || label === 'javascript') return new TsWorker();
-      return new EditorWorker();
+      if (label === 'json') return worker(urls.jsonWorker, label);
+      if (label === 'css' || label === 'scss' || label === 'less') return worker(urls.cssWorker, label);
+      if (label === 'html' || label === 'handlebars' || label === 'razor')
+        return worker(urls.htmlWorker, label);
+      if (label === 'typescript' || label === 'javascript') return worker(urls.tsWorker, label);
+      return worker(urls.editorWorker, 'editor');
     },
   };
 

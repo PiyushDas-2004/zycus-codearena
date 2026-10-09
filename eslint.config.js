@@ -27,6 +27,30 @@ export default tseslint.config(
       'no-eval': 'error',
       'no-implied-eval': 'error',
       'no-new-func': 'error',
+      // Performance / CSP: keep heavy or eval-probing libraries out of candidate pages.
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: 'zod', message: "Import { z } from '@/shared/zod' (configured for our CSP)." },
+            {
+              name: '@supabase/supabase-js',
+              message:
+                'Candidate pages call the API with fetch (supabaseCandidateApi.ts). The full client is for the admin portal only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  { files: ['src/shared/zod.ts'], rules: { 'no-restricted-imports': 'off' } },
+  {
+    files: ['src/features/admin/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: [{ name: 'zod', message: "Import { z } from '@/shared/zod' (configured for our CSP)." }] },
+      ],
     },
   },
   {

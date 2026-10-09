@@ -356,9 +356,9 @@ export class WorkspaceController {
     return counts[type];
   }
 
-  localViolationTotal(countedTypes: string[]): number {
-    const counts = this.o.record.violationCounts ?? {};
-    return countedTypes.reduce((sum, t) => sum + (counts[t] ?? 0), 0);
+  /** Violations counted on this device, per type. */
+  violationCounts(): Record<string, number> {
+    return { ...(this.o.record.violationCounts ?? {}) };
   }
 
   /** Proctoring entry point. Violations are sent immediately (`urgent`). */

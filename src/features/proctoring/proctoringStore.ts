@@ -10,8 +10,11 @@ export type CameraStatus = 'off' | 'starting' | 'live' | 'blocked' | 'unavailabl
 export interface WarningNotice {
   id: number;
   type: string;
+  /** "Warning {occurrence} of {warnings}". */
   occurrence: number;
-  total: number;
+  warnings: number;
+  /** What happens next (see consequenceLine). */
+  detail: string;
 }
 
 interface ProctoringUi {

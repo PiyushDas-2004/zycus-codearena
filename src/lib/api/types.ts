@@ -45,6 +45,8 @@ export interface SessionState {
   submitReason: SubmitReason | null;
   consentAccepted: boolean;
   violationCount: number;
+  /** Counted violations per type, as recorded by the server. */
+  violationCounts: Record<string, number>;
   candidate: { fullName: string; email: string };
   template: {
     name: string;

@@ -10,7 +10,7 @@ import { RateGate } from './rateGate';
 import { blockedShortcut } from './shortcutGuard';
 import { SnapshotUploader } from './snapshotUploader';
 import { CadenceAnalyzer, nonWhitespaceLength } from './typingMonitor';
-import { decideOutcome, limitLine } from './violationPolicy';
+import { consequenceLine, decideOutcome, policyLines, sharedCount } from './violationPolicy';
 
 describe('RateGate', () => {
   it('passes once per window and counts what it suppressed', () => {
@@ -26,21 +26,56 @@ describe('RateGate', () => {
   });
 });
 
-describe('violation policy (warn 2, auto-submit at 5)', () => {
-  const p = defaultViolationPolicy;
-  it('warns for the first two of each type, then notices, then submits at the limit', () => {
-    expect(decideOutcome(p, 1, 1)).toEqual({ kind: 'warn', occurrence: 1, total: 1 });
-    expect(decideOutcome(p, 2, 3)).toEqual({ kind: 'warn', occurrence: 2, total: 3 });
-    expect(decideOutcome(p, 3, 4)).toEqual({ kind: 'notice', occurrence: 3, total: 4 });
-    expect(decideOutcome(p, 1, 5)).toEqual({ kind: 'auto_submit', total: 5 });
+describe('violation policy', () => {
+  const p = defaultViolationPolicy; // shared: warn 2, submit at 5 · full screen: 3 · faces: 5
+
+  it('another person on camera: 5 warnings, the 6th time submits', () => {
+    for (let n = 1; n <= 5; n++) {
+      expect(decideOutcome(p, 'multiple_faces', n, 0)).toEqual({ kind: 'warn', occurrence: n, warnings: 5 });
+    }
+    expect(decideOutcome(p, 'multiple_faces', 6, 0)).toEqual({ kind: 'auto_submit' });
+    expect(consequenceLine(p, 'multiple_faces', 4, 0)).toBe(
+      '1 more warning for this, then the next time your assessment is submitted automatically.',
+    );
+    expect(consequenceLine(p, 'multiple_faces', 5, 0)).toContain('last warning');
   });
-  it('never auto-submits under flag_only and explains the limit otherwise', () => {
-    expect(decideOutcome({ ...p, onLimit: 'flag_only' }, 9, 50).kind).toBe('notice');
-    expect(limitLine(p, 4)).toContain('One more');
-    expect(limitLine(p, 2)).toBe(
+
+  it('leaving full screen: 3 warnings, the 4th time submits', () => {
+    expect(decideOutcome(p, 'fullscreen_exit', 3, 0)).toEqual({ kind: 'warn', occurrence: 3, warnings: 3 });
+    expect(decideOutcome(p, 'fullscreen_exit', 4, 0)).toEqual({ kind: 'auto_submit' });
+  });
+
+  it('own-limit types stay out of the shared limit of 5', () => {
+    const counts = { tab_switch: 2, fullscreen_exit: 3, multiple_faces: 5, no_face: 1 };
+    expect(sharedCount(p, counts)).toBe(3);
+    expect(decideOutcome(p, 'tab_switch', 3, 4)).toEqual({ kind: 'notice' });
+    expect(decideOutcome(p, 'no_face', 2, 5)).toEqual({ kind: 'auto_submit' });
+  });
+
+  it('shared types warn twice each, then show notices', () => {
+    expect(decideOutcome(p, 'tab_switch', 1, 1)).toEqual({ kind: 'warn', occurrence: 1, warnings: 2 });
+    expect(decideOutcome(p, 'tab_switch', 2, 3)).toEqual({ kind: 'warn', occurrence: 2, warnings: 2 });
+    expect(decideOutcome(p, 'tab_switch', 3, 4)).toEqual({ kind: 'notice' });
+    expect(consequenceLine(p, 'tab_switch', 1, 2)).toBe(
       '2 of 5 violations recorded. At 5 your assessment is submitted automatically.',
     );
-    expect(limitLine({ ...p, maxTotalViolations: 0 }, 2)).toContain('reviewed');
+    expect(consequenceLine(p, 'tab_switch', 3, 4)).toContain('One more');
+  });
+
+  it('never auto-submits shared types under flag_only', () => {
+    expect(decideOutcome({ ...p, onLimit: 'flag_only' }, 'tab_switch', 9, 50).kind).toBe('notice');
+    expect(consequenceLine({ ...p, maxTotalViolations: 0 }, 'tab_switch', 1, 2)).toContain('reviewed');
+  });
+
+  it('summarises the policy for candidates', () => {
+    const lines = policyLines(p);
+    expect(lines[0]).toBe(
+      'Leaving full screen: 3 warnings, then the next time your assessment is submitted automatically.',
+    );
+    expect(lines[1]).toBe(
+      'Another person visible on camera: 5 warnings, then the next time your assessment is submitted automatically.',
+    );
+    expect(lines[2]).toMatch(/^Other rule breaks \(switching tabs or apps, .*after 5 in total/);
   });
 });
 

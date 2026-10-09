@@ -3,6 +3,7 @@ import { Alert, Button, Dialog, Spinner } from '@/design/components';
 import type { ResponseStatus } from '@/lib/api/types';
 import { fileKey } from '@/lib/persist/localRecord';
 import type { WorkspaceController } from '../WorkspaceController';
+import { useShallow } from 'zustand/react/shallow';
 import { useWorkspaceUi } from '../workspaceStore';
 
 const statusLabel: Record<ResponseStatus, string> = {
@@ -12,15 +13,28 @@ const statusLabel: Record<ResponseStatus, string> = {
 };
 
 export function SubmitDialog({ controller }: { controller: WorkspaceController }) {
-  const { submitPhase, questions, statuses, notes, modified, set } = useWorkspaceUi();
-  const open = submitPhase === 'confirm';
+  const open = useWorkspaceUi((s) => s.submitPhase === 'confirm');
+  // Mounted only while open, so the summary never re-renders during normal work.
+  return open ? <SubmitConfirm controller={controller} /> : null;
+}
+
+function SubmitConfirm({ controller }: { controller: WorkspaceController }) {
+  const { questions, statuses, notes, modified, set } = useWorkspaceUi(
+    useShallow((s) => ({
+      questions: s.questions,
+      statuses: s.statuses,
+      notes: s.notes,
+      modified: s.modified,
+      set: s.set,
+    })),
+  );
   const attempted = questions.filter(
     (q) => (statuses[q.questionId] ?? 'not_started') !== 'not_started',
   ).length;
   const flagged = questions.filter((q) => statuses[q.questionId] === 'marked_for_review').length;
   return (
     <Dialog
-      open={open}
+      open
       onClose={() => set({ submitPhase: 'idle' })}
       title="Submit your assessment?"
       description={`You attempted ${attempted} of ${questions.length} questions. You can't change anything after submitting.`}
@@ -85,7 +99,14 @@ export function SubmitDialog({ controller }: { controller: WorkspaceController }
 
 /** Blocking overlay while the final submission is in progress (candidate submit or time-up). */
 export function SubmittingOverlay({ controller }: { controller: WorkspaceController }) {
-  const { submitPhase, submitAttempts, timeUp, limitReached } = useWorkspaceUi();
+  const { submitPhase, submitAttempts, timeUp, limitReached } = useWorkspaceUi(
+    useShallow((s) => ({
+      submitPhase: s.submitPhase,
+      submitAttempts: s.submitAttempts,
+      timeUp: s.timeUp,
+      limitReached: s.limitReached,
+    })),
+  );
   const open = submitPhase === 'submitting' || submitPhase === 'retrying' || submitPhase === 'done';
   const struggling = submitPhase === 'retrying' && submitAttempts >= 2;
   return (

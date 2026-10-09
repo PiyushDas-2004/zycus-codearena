@@ -9,18 +9,19 @@ import { useWorkspaceUi } from '../workspaceStore';
 
 interface HeaderProps {
   state: SessionState;
-  remainingMs: number | null;
+  /** The countdown (its own component, so only it re-renders every second). */
+  timer: ReactNode;
   onSubmit: () => void;
   /** Webcam self-view (when the template uses the camera). */
   camera?: ReactNode;
 }
 
-export function WorkspaceHeader({ state, remainingMs, onSubmit, camera }: HeaderProps) {
+export function WorkspaceHeader({ state, timer, onSubmit, camera }: HeaderProps) {
   const locked = useWorkspaceUi((s) => s.locked);
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border bg-surface px-4">
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-3 lg:gap-4 lg:px-4">
       <BrandLogo height={24} />
-      <span className="h-6 w-px bg-border-strong" aria-hidden="true" />
+      <span className="hidden h-6 w-px bg-border-strong sm:block" aria-hidden="true" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-strong">{state.template.name}</p>
         <p className="truncate text-xs text-muted">{state.candidate.fullName}</p>
@@ -30,7 +31,7 @@ export function WorkspaceHeader({ state, remainingMs, onSubmit, camera }: Header
       </span>
       {camera}
       <SaveIndicator />
-      <Countdown remainingMs={remainingMs} />
+      {timer}
       <Button size="sm" onClick={onSubmit} disabled={locked}>
         Submit
       </Button>
@@ -67,9 +68,10 @@ function SaveIndicator() {
       className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-xs text-muted"
       role="status"
       aria-live="polite"
+      title={`${text}${ago}`}
     >
       {icon}
-      <span className={clsx(status.phase === 'offline' && 'font-medium text-warning')}>
+      <span className={clsx('hidden lg:inline', status.phase === 'offline' && 'font-medium text-warning')}>
         {text}
         {ago}
       </span>
@@ -85,7 +87,7 @@ function humanAgo(ms: number): string {
   return `${m} min ago`;
 }
 
-function Countdown({ remainingMs }: { remainingMs: number | null }) {
+export function Countdown({ remainingMs }: { remainingMs: number | null }) {
   if (remainingMs === null) return null;
   const minutes = remainingMs / 60_000;
   const tone = minutes <= 5 ? 'danger' : minutes <= 10 ? 'warning' : 'normal';

@@ -68,6 +68,15 @@ export class FacePresence {
   }
 }
 
+/** Self-hosted MediaPipe runtime files (also prefetched while the candidate reads the instructions). */
+export async function faceRuntimeUrls(): Promise<{ loader: string; binary: string; model: string }> {
+  const [loader, binary] = await Promise.all([
+    import('@mediapipe/tasks-vision/vision_wasm_internal.js?url'),
+    import('@mediapipe/tasks-vision/vision_wasm_internal.wasm?url'),
+  ]);
+  return { loader: loader.default, binary: binary.default, model: FACE_MODEL_PATH };
+}
+
 export interface FaceCounter {
   count(video: HTMLVideoElement, timestampMs: number): number;
   close(): void;
@@ -80,12 +89,11 @@ export async function loadFaceCounter(): Promise<{ counter: FaceCounter } | { er
     const head = await fetch(FACE_MODEL_PATH, { method: 'HEAD' });
     if (!head.ok || /text\/html/i.test(head.headers.get('content-type') ?? ''))
       return { error: 'model_missing' };
-    const [{ FaceDetector }, loader, binary] = await Promise.all([
+    const [{ FaceDetector }, assets] = await Promise.all([
       import('@mediapipe/tasks-vision'),
-      import('@mediapipe/tasks-vision/vision_wasm_internal.js?url'),
-      import('@mediapipe/tasks-vision/vision_wasm_internal.wasm?url'),
+      faceRuntimeUrls(),
     ]);
-    const fileset = { wasmLoaderPath: loader.default, wasmBinaryPath: binary.default };
+    const fileset = { wasmLoaderPath: assets.loader, wasmBinaryPath: assets.binary };
     const create = (delegate: 'GPU' | 'CPU') =>
       FaceDetector.createFromOptions(fileset, {
         baseOptions: { modelAssetPath: FACE_MODEL_PATH, delegate },

@@ -24,7 +24,8 @@ import { OfflineBanner, StaffMessageDialog, SubmitDialog, SubmittingOverlay } fr
 import { EditorPane } from './components/EditorPane';
 import { ProblemPane } from './components/ProblemPane';
 import { QuestionNavigator } from './components/QuestionNavigator';
-import { WorkspaceHeader } from './components/WorkspaceHeader';
+import { WindowTooSmall } from './components/WindowTooSmall';
+import { Countdown, WorkspaceHeader } from './components/WorkspaceHeader';
 import { setupMonaco } from './editor/monacoSetup';
 import { mergeWorkspace } from './mergeWorkspace';
 import { dueWarnings, useCountdown } from './useCountdown';
@@ -133,7 +134,7 @@ function WorkspaceLoader({ state }: { state: SessionState }) {
         workspace: controller,
         api,
         token,
-        serverViolationCount: () => useCandidateSession.getState().state?.violationCount ?? 0,
+        serverViolationCounts: () => useCandidateSession.getState().state?.violationCounts ?? {},
         resumed,
       });
       controller.start();
@@ -244,23 +245,19 @@ interface WorkspaceProps {
 
 function Workspace({ state, controller, proctor, monaco }: WorkspaceProps) {
   const proctoring: ProctoringConfig = resolveProctoringConfig(state.proctoring);
-  const policy = resolveViolationPolicy(state.violationPolicy);
-  const deadlineMs = useWorkspaceUi((s) => s.deadlineMs);
   const submitPhase = useWorkspaceUi((s) => s.submitPhase);
   const set = useWorkspaceUi((s) => s.set);
-  const remaining = useCountdown(deadlineMs);
   const theme = useWorkspaceUi((s) => s.prefs.theme);
   // Dark mode is a workspace-only option: applied while the workspace is open, light elsewhere.
   useEffect(() => applyTheme(theme), [theme]);
   useEffect(() => () => applyTheme('light'), []);
-  useTimeKeeping(controller, remaining);
   useLifecycle(controller, submitPhase);
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-surface-app">
       <WorkspaceHeader
         state={state}
-        remainingMs={remaining}
+        timer={<WorkspaceTimer controller={controller} />}
         onSubmit={() => set({ submitPhase: 'confirm' })}
         camera={proctoring.webcam.enabled ? <CameraBadge proctor={proctor} /> : null}
       />
@@ -284,7 +281,8 @@ function Workspace({ state, controller, proctor, monaco }: WorkspaceProps) {
       <SubmitDialog controller={controller} />
       <SubmittingOverlay controller={controller} />
       <StaffMessageDialog controller={controller} />
-      <ProctoringOverlays proctor={proctor} policy={policy} />
+      <ProctoringOverlays proctor={proctor} />
+      <WindowTooSmall />
       {proctoring.watermark.enabled && (
         <Watermark
           opacity={proctoring.watermark.opacity}
@@ -296,6 +294,14 @@ function Workspace({ state, controller, proctor, monaco }: WorkspaceProps) {
       )}
     </div>
   );
+}
+
+/** The countdown and everything driven by it; re-renders alone, twice a second. */
+function WorkspaceTimer({ controller }: { controller: WorkspaceController }) {
+  const deadlineMs = useWorkspaceUi((s) => s.deadlineMs);
+  const remaining = useCountdown(deadlineMs);
+  useTimeKeeping(controller, remaining);
+  return <Countdown remainingMs={remaining} />;
 }
 
 /** Timer warnings at 30/10/5/1 minutes and auto-submit at zero (the server enforces it too). */

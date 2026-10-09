@@ -3,7 +3,10 @@
  * and frozen into each session at start. Every measure can be toggled by a Super Admin.
  * Dependency-free apart from zod: shared by the browser app, seed builder and tests.
  */
-import { z } from 'zod';
+import { z } from './zod.ts';
+import { defaultProctoringConfig, defaultViolationPolicy } from './proctoringDefaults.ts';
+
+export { defaultProctoringConfig, defaultViolationPolicy, VIOLATION_TYPES } from './proctoringDefaults.ts';
 
 const toggle = <T extends z.ZodRawShape>(shape: T) => z.object({ enabled: z.boolean(), ...shape });
 
@@ -37,57 +40,32 @@ export const ProctoringConfigSchema = z.object({
 });
 export type ProctoringConfig = z.infer<typeof ProctoringConfigSchema>;
 
-export const VIOLATION_TYPES = [
-  'tab_switch',
-  'window_blur',
-  'fullscreen_exit',
-  'second_tab',
-  'session_takeover',
-  'multi_monitor',
-  'camera_off',
-  'no_face',
-  'multiple_faces',
-] as const;
+export const ViolationRuleSchema = z.object({
+  /** Warnings shown for the first N occurrences of this type. */
+  warnings: z.number().int().min(0).max(20),
+  /**
+   * true: this type has its OWN limit — occurrence N+1 submits the assessment, and it does not
+   * count toward maxTotalViolations. false: only overrides the number of warnings.
+   */
+  autoSubmit: z.boolean(),
+});
+export type ViolationRule = z.infer<typeof ViolationRuleSchema>;
 
 export const ViolationPolicySchema = z.object({
   /** Warnings shown for the first N occurrences of each type (overlay + toast). */
   warnOnOccurrences: z.number().int().min(0).max(10),
-  /** On reaching this many counted violations in total, apply `onLimit`. 0 disables the limit. */
+  /**
+   * Shared limit: on reaching this many counted violations (of types without their own limit),
+   * apply `onLimit`. 0 disables it.
+   */
   maxTotalViolations: z.number().int().min(0).max(100),
   onLimit: z.enum(['auto_submit', 'flag_only']),
-  /** Event types that count toward the total. Others are still logged for reviewers. */
+  /** Event types that count as violations. Others are still logged for reviewers. */
   countedTypes: z.array(z.string().regex(/^[a-z_]{1,40}$/)).max(40),
+  /** Per-type overrides (see ViolationRuleSchema). */
+  rules: z.record(z.string().regex(/^[a-z_]{1,40}$/), ViolationRuleSchema),
 });
 export type ViolationPolicy = z.infer<typeof ViolationPolicySchema>;
-
-/** Defaults approved in Phase 0 (decision Q4). */
-export const defaultProctoringConfig: ProctoringConfig = {
-  fullscreen: { enabled: true },
-  keyboardLock: { enabled: true },
-  tabSwitch: { enabled: true },
-  windowBlur: { enabled: true, graceMs: 1500 },
-  paste: { enabled: true, allowInternalClipboard: false },
-  dragDrop: { enabled: true },
-  suspiciousInsert: { enabled: true, thresholdChars: 60 },
-  typingCadence: { enabled: true, maxCharsPerSecond: 25 },
-  copyProtection: { enabled: true },
-  blockedShortcuts: { enabled: true },
-  devtoolsHeuristic: { enabled: true },
-  multiTab: { enabled: true },
-  multiMonitor: { enabled: true, blockStartIfExtended: true, pollMs: 5000 },
-  webcam: { enabled: true, required: true, snapshotIntervalSec: 150, snapshotOnViolation: true },
-  faceDetection: { enabled: true, intervalMs: 2000, noFaceSeconds: 10, multiFaceConsecutive: 2 },
-  microphone: { enabled: false, loudDbfs: -20, sustainSec: 3 },
-  watermark: { enabled: true, opacity: 0.06 },
-  keystrokeReplay: { enabled: true },
-};
-
-export const defaultViolationPolicy: ViolationPolicy = {
-  warnOnOccurrences: 2,
-  maxTotalViolations: 5,
-  onLimit: 'auto_submit',
-  countedTypes: [...VIOLATION_TYPES],
-};
 
 /** Deep-merges a stored (possibly partial or older) config over the defaults. */
 export function resolveProctoringConfig(stored: unknown): ProctoringConfig {
@@ -100,6 +78,14 @@ export function resolveProctoringConfig(stored: unknown): ProctoringConfig {
   return ProctoringConfigSchema.parse(base);
 }
 
+/**
+ * A stored policy without `rules` (frozen before per-type limits existed) keeps behaving as it did:
+ * no rules, exactly like the server, which only reads what was frozen into the session.
+ */
 export function resolveViolationPolicy(stored: unknown): ViolationPolicy {
-  return ViolationPolicySchema.parse({ ...defaultViolationPolicy, ...(stored as object | null) });
+  if (!stored || typeof stored !== 'object' || Object.keys(stored).length === 0) {
+    return ViolationPolicySchema.parse(defaultViolationPolicy);
+  }
+  const s = stored as Partial<ViolationPolicy>;
+  return ViolationPolicySchema.parse({ ...defaultViolationPolicy, ...s, rules: s.rules ?? {} });
 }

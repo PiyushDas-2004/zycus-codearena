@@ -6,15 +6,29 @@ import { defineConfig, type Plugin } from 'vitest/config';
 import { appConfig } from './src/config/app.config.ts';
 import { cloudflareHeadersFile, securityHeaders } from './src/config/securityHeaders.ts';
 
-/** Injects the platform name/subtitle from src/config/app.config.ts so it is defined in one place. */
+/**
+ * Injects the platform name/subtitle from src/config/app.config.ts (defined in one place), and a
+ * preconnect to the Supabase project so the first API call doesn't wait for DNS + TLS.
+ */
 function platformIdentity(): Plugin {
+  let supabaseUrl = '';
   return {
     name: 'codearena-platform-identity',
+    configResolved(config) {
+      supabaseUrl = config.env.VITE_USE_MOCK_BACKEND === 'true' ? '' : (config.env.VITE_SUPABASE_URL ?? '');
+    },
     transformIndexHtml(html) {
-      return html
+      const out = html
         .replaceAll('__PLATFORM_NAME__', appConfig.platformName)
         .replaceAll('__PLATFORM_SUBTITLE__', appConfig.subtitle)
         .replaceAll('__FAVICON__', appConfig.brand.favicon);
+      if (!supabaseUrl) return out;
+      return {
+        html: out,
+        tags: [
+          { tag: 'link', attrs: { rel: 'preconnect', href: supabaseUrl, crossorigin: '' }, injectTo: 'head' },
+        ],
+      };
     },
   };
 }
@@ -71,6 +85,8 @@ export default defineConfig({
   // Pre-bundle heavy deps so the dev server doesn't reload the page when the workspace first opens.
   optimizeDeps: { include: ['monaco-editor', 'fflate', 'react-resizable-panels', 'idb-keyval'] },
   preview: { port: 4173, strictPort: true },
+  // Editor workers are started as module workers (same format in dev and in the build).
+  worker: { format: 'es' },
   build: {
     target: 'es2023',
     sourcemap: false,

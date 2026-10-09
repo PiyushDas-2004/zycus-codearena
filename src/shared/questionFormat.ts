@@ -5,7 +5,7 @@
  *
  * Dependency-free apart from zod: shared by the browser app, Node scripts and tests.
  */
-import { z } from 'zod';
+import { z } from './zod.ts';
 import { ProctoringConfigSchema, ViolationPolicySchema } from './proctoringConfig.ts';
 
 export const QUESTION_FORMAT = 'zycus-codearena/question@1';

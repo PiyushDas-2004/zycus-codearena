@@ -34,7 +34,11 @@
     "countedTypes": [
       "tab_switch", "window_blur", "fullscreen_exit", "second_tab", "session_takeover",
       "multi_monitor", "camera_off", "no_face", "multiple_faces"
-    ]
+    ],
+    "rules": {
+      "fullscreen_exit": { "warnings": 3, "autoSubmit": true },
+      "multiple_faces": { "warnings": 5, "autoSubmit": true }
+    }
   },
   "question_slugs": [
     "rn-catalogue-debugging",

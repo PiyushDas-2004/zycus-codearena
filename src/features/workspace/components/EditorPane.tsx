@@ -7,6 +7,7 @@ import { Button, Dialog, IconButton } from '@/design/components';
 import { fileKey } from '@/lib/persist/localRecord';
 import type { ProctoringConfig } from '@/shared/proctoringConfig';
 import type { WorkspaceController } from '../WorkspaceController';
+import { useShallow } from 'zustand/react/shallow';
 import { savePrefs, useWorkspaceUi } from '../workspaceStore';
 import { FileTree } from './FileTree';
 
@@ -18,8 +19,21 @@ interface EditorPaneProps {
 
 export function EditorPane({ controller, monaco, proctoring }: EditorPaneProps) {
   const host = useRef<HTMLDivElement>(null);
+  // Shallow selection: re-render on these fields only (not on every save-status change).
   const { questions, currentQuestionId, openTabs, activeFile, modified, prefs, locked, paused, set } =
-    useWorkspaceUi();
+    useWorkspaceUi(
+      useShallow((s) => ({
+        questions: s.questions,
+        currentQuestionId: s.currentQuestionId,
+        openTabs: s.openTabs,
+        activeFile: s.activeFile,
+        modified: s.modified,
+        prefs: s.prefs,
+        locked: s.locked,
+        paused: s.paused,
+        set: s.set,
+      })),
+    );
   const [confirmReset, setConfirmReset] = useState<string | null>(null);
   const q = questions.find((x) => x.questionId === currentQuestionId);
   const qid = q?.questionId ?? '';
@@ -85,7 +99,7 @@ export function EditorPane({ controller, monaco, proctoring }: EditorPaneProps) 
   return (
     <>
       <Group orientation="horizontal" className="h-full">
-        <Panel defaultSize="24" minSize="14" maxSize="40">
+        <Panel defaultSize="24" minSize={140} maxSize="40">
           <FileTree
             questionId={qid}
             files={q.files}
@@ -95,8 +109,8 @@ export function EditorPane({ controller, monaco, proctoring }: EditorPaneProps) 
           />
         </Panel>
         <Separator className="w-1 bg-border transition-colors hover:bg-separator-hover" />
-        <Panel minSize="40">
-          <div className="flex h-full flex-col bg-surface">
+        <Panel minSize={320}>
+          <div className="@container flex h-full flex-col bg-surface">
             <div className="flex h-10 shrink-0 items-stretch border-b border-border bg-surface-app">
               <div role="tablist" aria-label="Open files" className="flex min-w-0 flex-1 overflow-x-auto">
                 {tabs.map((path) => {
@@ -144,8 +158,10 @@ export function EditorPane({ controller, monaco, proctoring }: EditorPaneProps) 
                     !active || activeFileMeta?.readonly || locked || !modified[fileKey(qid, active ?? '')]
                   }
                   onClick={() => setConfirmReset(active)}
+                  aria-label="Reset file"
+                  title="Reset file"
                 >
-                  Reset file
+                  <span className="hidden @lg:inline">Reset file</span>
                 </Button>
                 <IconButton
                   size="sm"

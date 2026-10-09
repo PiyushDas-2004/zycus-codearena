@@ -12,7 +12,7 @@
  * window.__codearenaDev.setRelaxedProctoring instead: see devRelaxedProctoring.ts.)
  */
 import { normalizeAccessCode } from '@/shared/accessCode';
-import { defaultProctoringConfig, defaultViolationPolicy } from '@/shared/proctoringConfig';
+import { defaultProctoringConfig, defaultViolationPolicy } from '@/shared/proctoringDefaults';
 import type {
   ApiResult,
   CallTiming,
@@ -40,6 +40,7 @@ interface MockSession {
   submitReason: SessionState['submitReason'];
   durationSeconds: number;
   violationCount: number;
+  violationCounts?: Record<string, number>;
   files: Record<string, { content: string; seq: number }>;
   responses: Record<string, { status: ResponseStatus; notes: string; seq: number }>;
   eventIds: string[];
@@ -215,6 +216,7 @@ export function createMockCandidateApi(): CandidateApi {
       submitReason: s.submitReason,
       consentAccepted: s.consentAccepted,
       violationCount: s.violationCount,
+      violationCounts: { ...(s.violationCounts ?? {}) },
       candidate: { fullName: 'Demo Candidate', email: s.email },
       template: {
         name: 'Lead React Native Developer – Hands-On (mock)',
@@ -286,9 +288,19 @@ export function createMockCandidateApi(): CandidateApi {
       if (s.status !== 'in_progress' || s.eventIds.includes(e.client_event_id)) continue;
       s.eventIds.push(e.client_event_id);
       events++;
-      if ((defaultViolationPolicy.countedTypes as string[]).includes(e.type)) {
+      const policy = defaultViolationPolicy;
+      if (policy.countedTypes.includes(e.type)) {
         s.violationCount++;
-        if (s.violationCount >= defaultViolationPolicy.maxTotalViolations) {
+        const counts = (s.violationCounts ??= {});
+        counts[e.type] = (counts[e.type] ?? 0) + 1;
+        const rule = policy.rules[e.type];
+        const shared = policy.countedTypes
+          .filter((t) => policy.rules[t]?.autoSubmit !== true)
+          .reduce((n, t) => n + (counts[t] ?? 0), 0);
+        const limitReached = rule?.autoSubmit
+          ? (counts[e.type] ?? 0) > rule.warnings
+          : policy.maxTotalViolations > 0 && shared >= policy.maxTotalViolations;
+        if (limitReached) {
           s.status = 'submitted';
           s.submitReason = 'violation_limit';
           s.submittedAtMs = Date.now();

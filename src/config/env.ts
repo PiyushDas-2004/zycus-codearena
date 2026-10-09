@@ -1,32 +1,7 @@
-import { z } from 'zod';
-
-const flag = z
-  .enum(['true', 'false', ''])
-  .optional()
-  .transform((v) => v === 'true');
-
-const EnvSchema = z
-  .object({
-    VITE_SUPABASE_URL: z.string().optional(),
-    VITE_SUPABASE_ANON_KEY: z.string().optional(),
-    VITE_ENABLE_ENTRA_SSO: flag,
-    VITE_ENABLE_STYLEGUIDE: flag,
-    VITE_USE_MOCK_BACKEND: flag,
-  })
-  .superRefine((env, ctx) => {
-    if (env.VITE_USE_MOCK_BACKEND) return;
-    if (!env.VITE_SUPABASE_URL || !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(env.VITE_SUPABASE_URL)) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['VITE_SUPABASE_URL'],
-        message: 'must look like https://<project-ref>.supabase.co',
-      });
-    }
-    if (!env.VITE_SUPABASE_ANON_KEY) {
-      ctx.addIssue({ code: 'custom', path: ['VITE_SUPABASE_ANON_KEY'], message: 'is required' });
-    }
-  });
-
+/**
+ * Build-time settings (VITE_* variables, baked in by Vite). Validated without a schema library so
+ * the sign-in page stays small.
+ */
 export type Env = {
   supabaseUrl: string;
   supabaseAnonKey: string;
@@ -37,25 +12,34 @@ export type Env = {
 
 export type EnvResult = { ok: true; env: Env } | { ok: false; problems: string[] };
 
+const SUPABASE_URL = /^https:\/\/[a-z0-9-]+\.supabase\.co$/;
+
 export function parseEnv(raw: Record<string, unknown>): EnvResult {
-  const parsed = EnvSchema.safeParse(raw);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      problems: parsed.error.issues.map((i) => `${i.path.join('.')} ${i.message}`),
-    };
-  }
-  const e = parsed.data;
-  return {
-    ok: true,
-    env: {
-      supabaseUrl: e.VITE_SUPABASE_URL ?? '',
-      supabaseAnonKey: e.VITE_SUPABASE_ANON_KEY ?? '',
-      enableEntraSso: e.VITE_ENABLE_ENTRA_SSO,
-      enableStyleguide: e.VITE_ENABLE_STYLEGUIDE || import.meta.env.DEV,
-      useMockBackend: e.VITE_USE_MOCK_BACKEND,
-    },
+  const problems: string[] = [];
+  const text = (key: string) => {
+    const v = raw[key];
+    return typeof v === 'string' ? v.trim() : '';
   };
+  const flag = (key: string) => {
+    const v = text(key);
+    if (v !== '' && v !== 'true' && v !== 'false') problems.push(`${key} must be true or false`);
+    return v === 'true';
+  };
+
+  const env: Env = {
+    supabaseUrl: text('VITE_SUPABASE_URL'),
+    supabaseAnonKey: text('VITE_SUPABASE_ANON_KEY'),
+    enableEntraSso: flag('VITE_ENABLE_ENTRA_SSO'),
+    enableStyleguide: flag('VITE_ENABLE_STYLEGUIDE') || import.meta.env.DEV,
+    useMockBackend: flag('VITE_USE_MOCK_BACKEND'),
+  };
+  if (!env.useMockBackend) {
+    if (!SUPABASE_URL.test(env.supabaseUrl)) {
+      problems.push('VITE_SUPABASE_URL must look like https://<project-ref>.supabase.co');
+    }
+    if (!env.supabaseAnonKey) problems.push('VITE_SUPABASE_ANON_KEY is required');
+  }
+  return problems.length ? { ok: false, problems } : { ok: true, env };
 }
 
 export const envResult = parseEnv(import.meta.env);

@@ -311,22 +311,63 @@ describe('autosave and proctoring events', () => {
 });
 
 describe('violation limit, time-up, submission and capacity', () => {
-  it('auto-submits on the 5th counted violation', async () => {
+  it('auto-submits at 5 shared violations; own-limit types do not count toward them', async () => {
     const { token } = await startedSession('Vik', 'vik@example.com');
     const events = [
       'tab_switch',
+      'fullscreen_exit', // own limit
       'window_blur',
-      'fullscreen_exit',
-      'multiple_faces',
+      'multiple_faces', // own limit
       'no_face',
       'camera_off',
+      'multi_monitor', // 5th shared violation
+      'second_tab',
     ].map((type, i) => ({ client_event_id: `v${i}`, type }));
     const res = await rpc('candidate_sync', token, { events });
     const s = stateOf(res);
     expect(s.status).toBe('submitted');
     expect(s.submit_reason).toBe('violation_limit');
-    expect(s.violation_count).toBe(5); // processing stops at the limit
+    expect(s.violation_count).toBe(7); // processing stops at the limit
+    expect((res.state as { violation_counts: Record<string, number> }).violation_counts).toEqual({
+      tab_switch: 1,
+      fullscreen_exit: 1,
+      window_blur: 1,
+      multiple_faces: 1,
+      no_face: 1,
+      camera_off: 1,
+      multi_monitor: 1,
+    });
     expect((await rpc('candidate_sync', token, {})).error).toBe('SUBMITTED');
+  });
+
+  it('leaving full screen: 3 warnings, the 4th time submits', async () => {
+    const { token } = await startedSession('Fia', 'fia@example.com');
+    const exit = (i: number) => ({ client_event_id: `fs${i}`, type: 'fullscreen_exit' });
+    const after3 = await rpc('candidate_sync', token, { events: [exit(1), exit(2), exit(3)] });
+    expect(stateOf(after3).status).toBe('in_progress');
+    const after4 = await rpc('candidate_sync', token, { events: [exit(4)] });
+    expect(stateOf(after4)).toMatchObject({ status: 'submitted', submit_reason: 'violation_limit' });
+  });
+
+  it('another person on camera: 5 warnings, the 6th time submits', async () => {
+    const { token } = await startedSession('Mo', 'mo@example.com');
+    const faces = (from: number, n: number) =>
+      Array.from({ length: n }, (_, i) => ({ client_event_id: `mf${from + i}`, type: 'multiple_faces' }));
+    const after5 = await rpc('candidate_sync', token, { events: faces(1, 5) });
+    expect(stateOf(after5).status).toBe('in_progress');
+    const after6 = await rpc('candidate_sync', token, { events: faces(6, 1) });
+    expect(stateOf(after6)).toMatchObject({ status: 'submitted', submit_reason: 'violation_limit' });
+  });
+
+  it('a policy frozen without per-type rules keeps the old shared limit for every type', async () => {
+    const { token, started } = await startedSession('Old', 'old.policy@example.com');
+    await db.query(`update public.sessions set violation_policy = violation_policy - 'rules' where id = $1`, [
+      stateOf(started).session_id,
+    ]);
+    const events = ['fullscreen_exit', 'fullscreen_exit', 'multiple_faces', 'tab_switch', 'no_face'].map(
+      (type, i) => ({ client_event_id: `o${i}`, type }),
+    );
+    expect(stateOf(await rpc('candidate_sync', token, { events })).status).toBe('submitted');
   });
 
   it('accepts saves within the grace period but rejects them after it, stamping the exact deadline', async () => {

@@ -18,22 +18,26 @@ export function CandidateShell({ step, candidateName, children, wide }: Candidat
     <div className="flex min-h-dvh flex-col">
       <SpectrumBar />
       <header className="border-b border-border bg-surface">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-8 py-4">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-4 sm:px-8">
           <ProductLockup />
           {candidateName && (
-            <p className="text-sm text-muted">
+            <p className="min-w-0 truncate text-sm text-muted">
               Signed in as <span className="font-medium text-strong">{candidateName}</span>
             </p>
           )}
         </div>
       </header>
       <nav aria-label="Assessment progress" className="border-b border-border bg-surface">
-        <ol className="mx-auto flex max-w-6xl items-center gap-2 px-8 py-3">
+        <ol className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 py-3 sm:gap-2 sm:px-8">
           {STEPS.map((label, i) => {
             const done = i < step;
             const current = i === step;
             return (
-              <li key={label} className="flex items-center gap-2" aria-current={current ? 'step' : undefined}>
+              <li
+                key={label}
+                className="flex shrink-0 items-center gap-2"
+                aria-current={current ? 'step' : undefined}
+              >
                 <span
                   className={clsx(
                     'flex size-6 items-center justify-center rounded-full text-xs font-semibold',
@@ -44,18 +48,26 @@ export function CandidateShell({ step, candidateName, children, wide }: Candidat
                 >
                   {done ? <Check className="size-3.5" aria-hidden="true" /> : i + 1}
                 </span>
-                <span className={clsx('text-sm', current ? 'font-semibold text-strong' : 'text-muted')}>
+                {/* On small screens only the current step is named. */}
+                <span
+                  className={clsx(
+                    'whitespace-nowrap text-sm',
+                    current ? 'font-semibold text-strong' : 'hidden text-muted sm:inline',
+                  )}
+                >
                   {label}
                 </span>
                 {i < STEPS.length - 1 && (
-                  <span className="mx-2 h-px w-8 bg-border-strong" aria-hidden="true" />
+                  <span className="mx-1 h-px w-4 bg-border-strong sm:mx-2 sm:w-8" aria-hidden="true" />
                 )}
               </li>
             );
           })}
         </ol>
       </nav>
-      <main className={clsx('mx-auto w-full flex-1 px-8 py-10', wide ? 'max-w-6xl' : 'max-w-4xl')}>
+      <main
+        className={clsx('mx-auto w-full flex-1 px-4 py-8 sm:px-8 sm:py-10', wide ? 'max-w-6xl' : 'max-w-4xl')}
+      >
         {children}
       </main>
       <AppFooter />

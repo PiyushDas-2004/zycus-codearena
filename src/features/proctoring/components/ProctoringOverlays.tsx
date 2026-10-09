@@ -1,24 +1,17 @@
 import { Camera, Maximize, MonitorX, TriangleAlert } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Alert, Button, Dialog } from '@/design/components';
-import type { ViolationPolicy } from '@/shared/proctoringConfig';
 import type { ProctoringController } from '../ProctoringController';
 import { useProctoring, type Blocker } from '../proctoringStore';
-import { copyFor, limitLine } from '../violationPolicy';
+import { copyFor } from '../violationPolicy';
 
 /** Blocking overlays (full screen, camera, display) and the violation warning dialog. */
-export function ProctoringOverlays({
-  proctor,
-  policy,
-}: {
-  proctor: ProctoringController;
-  policy: ViolationPolicy;
-}) {
+export function ProctoringOverlays({ proctor }: { proctor: ProctoringController }) {
   const blocker = useProctoring((s) => s.blockers[0] ?? null);
   return (
     <>
       {blocker && <BlockingOverlay blocker={blocker} proctor={proctor} />}
-      <WarningDialog policy={policy} />
+      <WarningDialog />
     </>
   );
 }
@@ -94,7 +87,7 @@ function BlockingOverlay({ blocker, proctor }: { blocker: Blocker; proctor: Proc
   );
 }
 
-function WarningDialog({ policy }: { policy: ViolationPolicy }) {
+function WarningDialog() {
   const warning = useProctoring((s) => s.warning);
   const set = useProctoring((s) => s.set);
   const copy = warning ? copyFor(warning.type) : null;
@@ -114,8 +107,8 @@ function WarningDialog({ policy }: { policy: ViolationPolicy }) {
       footer={<Button onClick={() => set({ warning: null })}>I understand</Button>}
     >
       {warning && (
-        <Alert tone="warning" title={`Warning ${warning.occurrence} of ${policy.warnOnOccurrences}`}>
-          {limitLine(policy, warning.total)}
+        <Alert tone="warning" title={`Warning ${warning.occurrence} of ${warning.warnings}`}>
+          {warning.detail}
         </Alert>
       )}
     </Dialog>

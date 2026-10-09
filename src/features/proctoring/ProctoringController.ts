@@ -23,7 +23,7 @@ import { RateGate } from './rateGate';
 import { installShortcutGuard } from './shortcutGuard';
 import { SnapshotUploader } from './snapshotUploader';
 import { installTypingMonitor } from './typingMonitor';
-import { copyFor, decideOutcome, isCounted, limitLine } from './violationPolicy';
+import { consequenceLine, copyFor, decideOutcome, isCounted, sharedCount } from './violationPolicy';
 
 export interface ProctoringControllerOptions {
   config: ProctoringConfig;
@@ -31,8 +31,8 @@ export interface ProctoringControllerOptions {
   workspace: WorkspaceController;
   api: CandidateApi;
   token: string;
-  /** Latest violation count known from the server. */
-  serverViolationCount: () => number;
+  /** Latest per-type violation counts known from the server. */
+  serverViolationCounts: () => Record<string, number>;
   resumed: boolean;
 }
 
@@ -222,17 +222,29 @@ export class ProctoringController {
     });
     if (!counted) return;
 
-    const occurrence = this.ws.recordViolation(type);
-    const total = Math.max(this.o.serverViolationCount(), this.ws.localViolationTotal(policy.countedTypes));
-    const outcome = decideOutcome(policy, occurrence, total);
+    // Best known counts: this device's, or the server's if higher (e.g. after switching devices).
+    // The server hasn't seen this event yet, so its count for this type gets +1.
+    this.ws.recordViolation(type);
+    const local = this.ws.violationCounts();
+    const server = this.o.serverViolationCounts();
+    const counts: Record<string, number> = {};
+    for (const t of new Set([...Object.keys(local), ...Object.keys(server)])) {
+      counts[t] = Math.max(local[t] ?? 0, (server[t] ?? 0) + (t === type ? 1 : 0));
+    }
+    const occurrence = counts[type] ?? 1;
+    const shared = sharedCount(policy, counts);
+    const outcome = decideOutcome(policy, type, occurrence, shared);
     if (outcome.kind === 'auto_submit') {
       useWorkspaceUi.getState().set({ limitReached: true });
       void this.ws.submit();
     } else if (outcome.kind === 'warn') {
-      useProctoring.getState().set({ warning: { id: ++this.warningSeq, type, occurrence, total } });
-      this.ws.report('warning_shown', { kind: 'violation', type, occurrence, total });
+      const detail = consequenceLine(policy, type, occurrence, shared);
+      useProctoring.getState().set({
+        warning: { id: ++this.warningSeq, type, occurrence, warnings: outcome.warnings, detail },
+      });
+      this.ws.report('warning_shown', { kind: 'violation', type, occurrence, warnings: outcome.warnings });
     } else {
-      toast.danger(copyFor(type).title, limitLine(policy, total));
+      toast.danger(copyFor(type).title, consequenceLine(policy, type, occurrence, shared));
     }
   }
 

@@ -1,41 +1,38 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { mapState, mapWorkspace } from './mapping';
 import type { ApiResult, CallTiming, CandidateApi, CandidateErrorCode, SyncPayload } from './types';
 
 const REQUEST_TIMEOUT_MS = 20_000;
 
+/** Gateway, overload and timeout statuses: retried like a network failure. */
+const TRANSIENT_STATUS = new Set([408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
+
 type Raw = Record<string, unknown>;
 
 /**
- * Candidate calls go through a dedicated Supabase client with NO auth session: requests always run
- * as the `anon` role, even if a staff member is signed in to the admin portal in the same browser.
+ * Candidate calls are plain HTTPS POSTs to PostgREST's RPC endpoint (`/rest/v1/rpc/<fn>`) with the
+ * public key: no Supabase client library (keeps the candidate pages small and fast) and no auth
+ * session, so requests always run as `anon` even if a staff member is signed in to the admin portal
+ * in the same browser.
  */
 export function createSupabaseCandidateApi(url: string, anonKey: string): CandidateApi {
-  const client: SupabaseClient = createClient(url, anonKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-      detectSessionInUrl: false,
-      storageKey: 'codearena-candidate-noauth',
-    },
-  });
-
   async function call(
     fn: string,
     args: Record<string, unknown>,
   ): Promise<{ raw: Raw | null; timing: CallTiming; networkError: boolean }> {
     const sentAtPerf = performance.now();
     try {
-      const { data, error } = await client.rpc(fn, args).abortSignal(AbortSignal.timeout(REQUEST_TIMEOUT_MS));
+      const res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: { apikey: anonKey, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(args),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
       const timing = { sentAtPerf, receivedAtPerf: performance.now() };
-      if (error) {
-        // PostgREST errors (4xx/5xx) vs. transport failures (no response at all).
-        const transport =
-          !('code' in error) || !error.code || /fetch|network|abort|timeout/i.test(error.message);
-        return { raw: null, timing, networkError: transport };
-      }
-      return { raw: (data ?? null) as Raw | null, timing, networkError: false };
+      if (!res.ok) return { raw: null, timing, networkError: TRANSIENT_STATUS.has(res.status) };
+      return { raw: ((await res.json()) ?? null) as Raw | null, timing, networkError: false };
     } catch {
+      // No response at all (offline, DNS, timeout, connection reset).
       return { raw: null, timing: { sentAtPerf, receivedAtPerf: performance.now() }, networkError: true };
     }
   }

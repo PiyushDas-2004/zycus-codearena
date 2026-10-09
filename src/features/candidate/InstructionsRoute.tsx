@@ -1,5 +1,5 @@
 import { Clock, FileCode2, Maximize, ShieldCheck } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { legal, consentDocument, consentVersion } from '@/config/legal';
 import { Alert, Button, Card, Checkbox, Markdown } from '@/design/components';
@@ -8,29 +8,16 @@ import { sha256Hex } from '@/lib/crypto';
 import { describeDevice, hasExtendedDisplay } from '@/lib/device/environment';
 import { enterFullscreen } from '@/lib/device/fullscreen';
 import { serverClock } from '@/lib/time/serverClock';
-import {
-  resolveProctoringConfig,
-  resolveViolationPolicy,
-  type ViolationPolicy,
-} from '@/shared/proctoringConfig';
+import { resolveProctoringConfig, resolveViolationPolicy } from '@/shared/proctoringConfig';
 import { CandidateShell } from './CandidateShell';
+import { policyLines } from '../proctoring/violationPolicy';
+import { prefetchWorkspace } from '../workspace/prefetch';
 import { minutesLabel, proctoringMeasures } from './proctoringMeasures';
 import { CandidateGate } from './session/CandidateGate';
 import { candidateErrorMessage, useCandidateSession } from './session/candidateSession';
 
 export default function InstructionsRoute() {
   return <CandidateGate route="/instructions">{(state) => <Instructions state={state} />}</CandidateGate>;
-}
-
-function policySummary(v: ViolationPolicy): string {
-  const warn =
-    v.warnOnOccurrences > 0
-      ? `The first ${v.warnOnOccurrences === 1 ? 'time' : `${v.warnOnOccurrences} times`} a rule is broken you'll see a warning. `
-      : '';
-  if (v.maxTotalViolations > 0 && v.onLimit === 'auto_submit') {
-    return `${warn}After ${v.maxTotalViolations} recorded violations in total, your assessment is submitted automatically. All events are reviewed by the panel.`;
-  }
-  return `${warn}Every recorded event is shared with the interview panel, who decide how to treat it.`;
 }
 
 function Instructions({ state }: { state: SessionState }) {
@@ -55,6 +42,10 @@ function Instructions({ state }: { state: SessionState }) {
     [state.settings, proctoring.webcam.snapshotIntervalSec],
   );
   const consentText = useMemo(() => consentDocument(vars), [vars]);
+  const faceDetection = proctoring.webcam.enabled && proctoring.faceDetection.enabled;
+
+  // Download the editor and face detection in the background while the candidate reads.
+  useEffect(() => prefetchWorkspace({ faceDetection }), [faceDetection]);
 
   const accept = async () => {
     if (!token) return;
@@ -144,7 +135,12 @@ function Instructions({ state }: { state: SessionState }) {
             ))}
           </ul>
           <Alert tone="warning" className="mt-4" title="If a rule is broken">
-            {policySummary(policy)}
+            <ul className="list-disc space-y-1 pl-4">
+              {policyLines(policy).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+            <p className="mt-2">All events are reviewed by the interview panel.</p>
           </Alert>
         </Card>
       </div>
