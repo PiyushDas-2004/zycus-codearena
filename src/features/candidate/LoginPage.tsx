@@ -14,11 +14,13 @@ interface LoginPageProps {
   /** Server-side error to display (e.g. invalid code, locked out). */
   error?: string | null;
   busy?: boolean;
+  /** Development only: shown when the app runs against the in-browser mock backend. */
+  mockNotice?: boolean;
 }
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-export function LoginPage({ onSubmit, error, busy }: LoginPageProps) {
+export function LoginPage({ onSubmit, error, busy, mockNotice }: LoginPageProps) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [touched, setTouched] = useState(false);
@@ -67,6 +69,13 @@ export function LoginPage({ onSubmit, error, busy }: LoginPageProps) {
               </p>
 
               <form className="mt-8 flex flex-col gap-5" onSubmit={handleSubmit} noValidate>
+                {mockNotice && (
+                  <Alert tone="warning" title="Mock backend (development)">
+                    This server isn't connected to Supabase. Sign in with any email and the code{' '}
+                    <strong className="font-mono">DEMO-DEMO-DEMO</strong>. Real access codes work only with{' '}
+                    <code>npm run dev</code> (port 5173).
+                  </Alert>
+                )}
                 {error && (
                   <Alert tone="danger" live>
                     {error}

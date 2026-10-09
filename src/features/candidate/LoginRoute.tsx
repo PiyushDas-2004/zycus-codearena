@@ -43,5 +43,7 @@ export default function LoginRoute() {
     navigate(routeForState(res.state, false), { replace: true });
   };
 
-  return <LoginPage onSubmit={onSubmit} error={error} busy={busy} />;
+  return (
+    <LoginPage onSubmit={onSubmit} error={error} busy={busy} mockNotice={getCandidateApi().kind === 'mock'} />
+  );
 }
