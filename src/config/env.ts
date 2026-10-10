@@ -13,8 +13,10 @@ export type Env = {
 export type EnvResult = { ok: true; env: Env } | { ok: false; problems: string[] };
 
 const SUPABASE_URL = /^https:\/\/[a-z0-9-]+\.supabase\.co$/;
+/** The local stand-in for Supabase (npm run local:db): development builds only. */
+const LOCAL_STACK_URL = /^http:\/\/(127\.0\.0\.1|localhost):\d{2,5}$/;
 
-export function parseEnv(raw: Record<string, unknown>): EnvResult {
+export function parseEnv(raw: Record<string, unknown>, dev: boolean = import.meta.env.DEV): EnvResult {
   const problems: string[] = [];
   const text = (key: string) => {
     const v = raw[key];
@@ -34,7 +36,7 @@ export function parseEnv(raw: Record<string, unknown>): EnvResult {
     useMockBackend: flag('VITE_USE_MOCK_BACKEND'),
   };
   if (!env.useMockBackend) {
-    if (!SUPABASE_URL.test(env.supabaseUrl)) {
+    if (!SUPABASE_URL.test(env.supabaseUrl) && !(dev && LOCAL_STACK_URL.test(env.supabaseUrl))) {
       problems.push('VITE_SUPABASE_URL must look like https://<project-ref>.supabase.co');
     }
     if (!env.supabaseAnonKey) problems.push('VITE_SUPABASE_ANON_KEY is required');

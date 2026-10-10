@@ -37,6 +37,8 @@ export interface LocalRecord {
   firedWarnings: number[];
   /** Proctoring violations recorded on this device, per type (drives warnings; the server counts too). */
   violationCounts?: Record<string, number>;
+  /** The server's violationsResetCount these counts belong to (a reopen with fresh warnings). */
+  violationsResetSeen?: number;
   backupKeyB64: string;
   /** Frozen questions and last state, so a reload without network can still open the workspace. */
   cache?: { questions: WorkspaceQuestion[]; state: SessionState };

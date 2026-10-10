@@ -100,6 +100,23 @@
     line-height: 1.6;
     font-feature-settings: 'cv11', 'ss01';
   }
+  /* Tailwind 4 resets buttons to the default arrow; everything clickable shows the hand cursor. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='menuitem'],
+  a[href],
+  summary,
+  select:not(:disabled),
+  label:has(input[type='checkbox']:not(:disabled)),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
   h1,
   h2,
   h3,

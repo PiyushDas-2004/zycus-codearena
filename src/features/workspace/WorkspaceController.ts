@@ -17,7 +17,8 @@ import { fileKey, saveRecord, type LocalRecord } from '@/lib/persist/localRecord
 import { ReplayRecorder } from '@/lib/replay/recorder';
 import { SyncEngine, type FatalCode } from '@/lib/sync/syncEngine';
 import type { ServerClock } from '@/lib/time/serverClock';
-import { monacoLanguage } from './editor/monacoSetup';
+import { monacoLanguage, syncTypeScriptModels } from './editor/monacoSetup';
+import { attachSyntaxValidation } from './editor/validators';
 import { useWorkspaceUi } from './workspaceStore';
 
 export interface ControllerOptions {
@@ -89,10 +90,14 @@ export class WorkspaceController {
         this.disposables.push(
           model.onDidChangeContent((e) => this.onModelChange(q.questionId, f.path, model, e)),
         );
+        // Java / XML have no language service in Monaco: check their syntax ourselves.
+        const syntax = f.language === 'java' ? 'java' : f.language === 'xml' ? 'xml' : null;
+        if (syntax) this.disposables.push({ dispose: attachSyntaxValidation(o.monaco, model, syntax) });
         this.recorder.record({ k: 'snap', q: q.position, f: f.path, v: content });
       }
     }
     if (o.resumed) this.engine.enqueueEvent({ type: 'page_resume', details: { reason: 'reload_or_reopen' } });
+    void syncTypeScriptModels();
     this.initUi();
   }
 
@@ -100,13 +105,11 @@ export class WorkspaceController {
     const rec = this.o.record;
     const ui = useWorkspaceUi.getState();
     const statuses: Record<string, ResponseStatus> = {};
-    const notes: Record<string, string> = {};
     const openTabs: Record<string, string[]> = {};
     const activeFile: Record<string, string | null> = {};
     const modified: Record<string, boolean> = {};
     for (const q of this.questions) {
       statuses[q.questionId] = rec.responses[q.questionId]?.status ?? 'not_started';
-      notes[q.questionId] = rec.responses[q.questionId]?.notes ?? '';
       const firstEditable = q.files.find((f) => !f.readonly)?.path ?? q.files[0]?.path ?? null;
       const tabs = (rec.ui.openTabs[q.questionId] ?? []).filter((p) => q.files.some((f) => f.path === p));
       openTabs[q.questionId] = tabs.length ? tabs : firstEditable ? [firstEditable] : [];
@@ -120,7 +123,6 @@ export class WorkspaceController {
       questions: this.questions,
       currentQuestionId: rec.ui.currentQuestionId ?? this.questions[0]?.questionId ?? null,
       statuses,
-      notes,
       openTabs,
       activeFile,
       modified,
@@ -202,6 +204,28 @@ export class WorkspaceController {
     }
   }
 
+  /** Path of the file in the editor, if any. */
+  activeFilePath(): string | null {
+    const ui = useWorkspaceUi.getState();
+    return ui.currentQuestionId ? (ui.activeFile[ui.currentQuestionId] ?? null) : null;
+  }
+
+  /** The editor's selected text (all selections), capped for sending to the assistant. */
+  selectedText(maxLines: number, maxChars: number): { text: string; lines: number } {
+    const editor = this.editor;
+    const model = editor?.getModel();
+    if (!editor || !model) return { text: '', lines: 0 };
+    const text = (editor.getSelections() ?? [])
+      .map((s) => model.getValueInRange(s))
+      .filter(Boolean)
+      .join('\n')
+      .split('\n')
+      .slice(0, maxLines)
+      .join('\n')
+      .slice(0, maxChars);
+    return { text, lines: text ? text.split('\n').length : 0 };
+  }
+
   /** Shows a file in the single editor instance, preserving each file's cursor/scroll state. */
   showFile(questionId: string, path: string) {
     const editor = this.editor;
@@ -264,6 +288,18 @@ export class WorkspaceController {
     void this.engine.persistNow();
   }
 
+  /** Opens a file of the current question at a line (e.g. from a compile error). */
+  goTo(questionId: string, path: string, line: number) {
+    if (!this.modelFor(questionId, path)) return;
+    this.openFile(questionId, path);
+    this.showFile(questionId, path); // synchronously, so the editor can move to the line now
+    const editor = this.editor;
+    if (!editor) return;
+    editor.setPosition({ lineNumber: line, column: 1 });
+    editor.revealLineInCenter(line);
+    editor.focus();
+  }
+
   closeTab(questionId: string, path: string) {
     const ui = useWorkspaceUi.getState();
     const tabs = (ui.openTabs[questionId] ?? []).filter((p) => p !== path);
@@ -280,16 +316,6 @@ export class WorkspaceController {
   }
 
   // ── Responses ────────────────────────────────────────────────────────────
-  setNotes(questionId: string, notes: string) {
-    const ui = useWorkspaceUi.getState();
-    ui.set({ notes: { ...ui.notes, [questionId]: notes } });
-    const status = ui.statuses[questionId] === 'not_started' ? 'in_progress' : ui.statuses[questionId];
-    if (status && status !== ui.statuses[questionId])
-      ui.set({ statuses: { ...ui.statuses, [questionId]: status } });
-    this.engine.updateResponse(questionId, { notes, status });
-    this.recorder.record({ k: 'notes', q: this.positions.get(questionId) ?? 0, len: notes.length });
-  }
-
   setStatus(questionId: string, status: ResponseStatus) {
     const ui = useWorkspaceUi.getState();
     ui.set({ statuses: { ...ui.statuses, [questionId]: status } });

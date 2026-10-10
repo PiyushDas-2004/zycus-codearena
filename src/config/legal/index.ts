@@ -16,7 +16,7 @@ export const legal = {
   /** Shown when no grievance contact is configured in Admin → Settings. */
   defaultGrievanceContact: 'the Zycus Talent Acquisition contact in your invitation email',
 
-  consent: { version: '2026-10-09.2', markdown: consentMd },
+  consent: { version: '2026-10-10.1', markdown: consentMd },
   confidentiality: { version: '2026-10-09.1', markdown: confidentialityMd },
   thankYou: { markdown: thankYouMd },
 } as const;

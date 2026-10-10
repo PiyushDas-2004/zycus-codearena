@@ -28,6 +28,7 @@ import {
 import { probeStorage, requestPersistentStorage } from '@/lib/persist/localRecord';
 import { resolveProctoringConfig } from '@/shared/proctoringConfig';
 import { CandidateShell } from './CandidateShell';
+import { displayCheck } from './displayCheck';
 import { CandidateGate } from './session/CandidateGate';
 import { useCandidateSession } from './session/candidateSession';
 
@@ -157,18 +158,12 @@ function SystemCheck({ state }: { state: SessionState }) {
           },
     );
 
-    const extended = hasExtendedDisplay();
     update(
       'displays',
-      extended === false
-        ? { status: 'pass', detail: 'One display detected' }
-        : extended === true
-          ? {
-              status: 'fail',
-              detail:
-                'More than one display is connected. Disconnect extra monitors (or set the display to "Show only on 1"), then run the check again.',
-            }
-          : { status: 'warn', detail: "Your browser couldn't confirm the number of displays." },
+      displayCheck(
+        hasExtendedDisplay(),
+        proctoring.multiMonitor.enabled && proctoring.multiMonitor.blockStartIfExtended,
+      ),
     );
 
     update(

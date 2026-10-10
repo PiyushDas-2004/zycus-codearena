@@ -1,24 +1,51 @@
-import { LayoutDashboard } from 'lucide-react';
-import { AppFooter, Card, EmptyState, ProductLockup, SpectrumBar } from '@/design/components';
+import { lazy, Suspense, useEffect } from 'react';
+import { Navigate, Route, Routes } from 'react-router';
+import { LoadingState } from '@/design/components';
+import { useAdminSession } from './adminSession';
+import { AdminShell } from './components/AdminShell';
+import { AccessPage, SignInPage } from './pages/SignInPage';
 
-/** Phase 1 placeholder. The admin portal (roles, health check, monitor, results) arrives in Phase 4. */
+const CandidatesPage = lazy(() => import('./pages/CandidatesPage'));
+const CandidatePage = lazy(() => import('./pages/CandidatePage'));
+const TeamPage = lazy(() => import('./pages/TeamPage'));
+
+/**
+ * The admin portal (/admin): Zycus staff invite candidates, follow tests live, review results and
+ * act on a test (extend, message, force-submit, reopen). Staff sign in with Supabase Auth; every
+ * action is checked by the database and audit-logged.
+ */
 export default function AdminRoute() {
+  const status = useAdminSession((s) => s.status);
+  const staff = useAdminSession((s) => s.staff);
+  const init = useAdminSession((s) => s.init);
+
+  useEffect(() => {
+    void init();
+  }, [init]);
+
+  useEffect(() => {
+    document.title = 'Admin · Zycus CodeArena';
+  }, []);
+
+  if (status === 'loading') return <LoadingState label="Opening the admin portal…" className="min-h-dvh" />;
+  if (status === 'unavailable') return <AccessPage kind="unavailable" />;
+  if (status === 'offline') return <AccessPage kind="offline" onRetry={() => void init()} />;
+  if (status === 'not_staff') return <AccessPage kind="not_staff" />;
+  if (status !== 'ready' || !staff) return <SignInPage />;
+
   return (
-    <div className="flex min-h-dvh flex-col">
-      <SpectrumBar />
-      <header className="border-b border-border bg-surface px-8 py-4">
-        <ProductLockup />
-      </header>
-      <main className="flex flex-1 items-center justify-center px-6 py-16">
-        <Card className="w-full max-w-lg">
-          <EmptyState
-            icon={<LayoutDashboard className="size-6" aria-hidden="true" />}
-            title="Admin portal"
-            description="Zycus staff sign-in, the question bank, live monitoring and results are built in Phase 4."
+    <AdminShell>
+      <Suspense fallback={<LoadingState />}>
+        <Routes>
+          <Route index element={<CandidatesPage />} />
+          <Route path="candidates/:invitationId" element={<CandidatePage />} />
+          <Route
+            path="team"
+            element={staff.role === 'super_admin' ? <TeamPage /> : <Navigate to="/admin" replace />}
           />
-        </Card>
-      </main>
-      <AppFooter />
-    </div>
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </Suspense>
+    </AdminShell>
   );
 }

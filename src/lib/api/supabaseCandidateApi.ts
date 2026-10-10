@@ -2,6 +2,9 @@ import { mapState, mapWorkspace } from './mapping';
 import type { ApiResult, CallTiming, CandidateApi, CandidateErrorCode, SyncPayload } from './types';
 
 const REQUEST_TIMEOUT_MS = 20_000;
+/** How long the browser waits for the assistant's reply (the server gives up after 45 s). */
+const ASSISTANT_WAIT_MS = 50_000;
+const ASSISTANT_POLL_MS = 1_000;
 
 /** Gateway, overload and timeout statuses: retried like a network failure. */
 const TRANSIENT_STATUS = new Set([408, 425, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
@@ -145,6 +148,47 @@ export function createSupabaseCandidateApi(url: string, anonKey: string): Candid
       });
       if (!isOk(raw)) return fail(raw, timing, networkError);
       return { ok: true, timing, snapshotId: String(raw.snapshot_id) };
+    },
+
+    /**
+     * Reserves a question, then polls for the reply: the assistant worker (on a laptop inside the
+     * Zycus network) picks questions up from the database and posts the answers back.
+     */
+    async askAssistant(token, r) {
+      const sentAtPerf = performance.now();
+      const asked = await call('candidate_ai_ask', {
+        p_token: token,
+        p_question_id: r.questionId,
+        p_prompt: r.message,
+        p_file_path: r.filePath ?? '',
+        p_code: r.code ?? '',
+      });
+      if (!isOk(asked.raw)) return fail(asked.raw, asked.timing, asked.networkError);
+      const requestId = Number(asked.raw.request_id);
+      const cooldownSeconds = Number(asked.raw.cooldown_seconds ?? 0);
+      let remaining = Number(asked.raw.remaining ?? 0);
+      const giveUpAt = performance.now() + ASSISTANT_WAIT_MS;
+      while (performance.now() < giveUpAt) {
+        await new Promise((resolve) => setTimeout(resolve, ASSISTANT_POLL_MS));
+        const res = await call('candidate_ai_result', { p_token: token, p_request_id: requestId });
+        if (res.networkError) continue; // keep waiting through a blip
+        if (!isOk(res.raw)) return fail(res.raw, res.timing, false);
+        if (res.raw.status === 'answered') {
+          remaining = Number(res.raw.remaining ?? remaining);
+          return {
+            ok: true,
+            timing: { sentAtPerf, receivedAtPerf: res.timing.receivedAtPerf },
+            reply: String(res.raw.reply ?? ''),
+            remaining,
+            cooldownSeconds,
+          };
+        }
+      }
+      return {
+        ok: false,
+        error: 'ASSISTANT_UNAVAILABLE',
+        timing: { sentAtPerf, receivedAtPerf: performance.now() },
+      };
     },
   };
 }

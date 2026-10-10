@@ -17,6 +17,8 @@ const state = (over: Partial<SessionState> = {}): SessionState => ({
   consentAccepted: true,
   violationCount: 0,
   violationCounts: {},
+  violationsResetCount: 0,
+  aiUsed: 0,
   candidate: { fullName: 'A', email: 'a@example.com' },
   template: { name: 't', targetRole: '', durationMinutes: 150, instructionsMd: '', questionCount: 1 },
   proctoring: {},

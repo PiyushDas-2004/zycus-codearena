@@ -12,6 +12,8 @@
     "dev": "vite",
     "dev:mock": "vite --mode mock --port 5174 --strictPort",
     "preview:mock": "vite build --mode mock --outDir dist-mock && vite preview --mode mock --outDir dist-mock --port 4174 --strictPort",
+    "local:db": "node scripts/local-stack.ts",
+    "dev:local": "vite --mode localstack --port 5175 --strictPort",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
@@ -26,6 +28,9 @@
     "seed:check": "node scripts/build-seed.ts --check",
     "check": "npm run lint && npm run format:check && npm run seed:check && npm run test && npm run build",
     "sql:bundle": "node scripts/bundle-sql.ts",
+    "sql:copy": "node scripts/copy-sql.ts",
+    "assistant:worker": "node --use-system-ca scripts/assistant-worker.ts",
+    "local:worker": "node --use-system-ca scripts/local-worker.ts",
     "models:fetch": "node --use-system-ca scripts/fetch-models.ts"
   },
   "dependencies": {
@@ -35,6 +40,7 @@
     "clsx": "2.1.1",
     "fflate": "0.8.3",
     "idb-keyval": "6.3.0",
+    "java-parser": "3.0.1",
     "lucide-react": "1.53.0",
     "monaco-editor": "0.57.0",
     "react": "19.3.0",
@@ -42,6 +48,7 @@
     "react-markdown": "10.1.0",
     "react-resizable-panels": "4.14.3",
     "react-router": "8.4.0",
+    "react-test-renderer": "19.3.0",
     "rehype-sanitize": "6.0.0",
     "remark-gfm": "4.0.1",
     "zod": "4.6.5",
@@ -58,6 +65,7 @@
     "@types/node": "24.19.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "@types/react-test-renderer": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
     "eslint": "10.12.0",
     "eslint-plugin-react-hooks": "7.1.1",
@@ -73,6 +81,8 @@
     "vitest": "5.0.3"
   },
   "overrides": {
-    "dompurify": "3.4.16"
+    "dompurify": "3.4.16",
+    "lodash": "4.18.1",
+    "lodash-es": "4.18.1"
   }
 }

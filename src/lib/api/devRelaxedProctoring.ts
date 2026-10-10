@@ -69,5 +69,6 @@ export function withRelaxedProctoring(api: CandidateApi): CandidateApi {
     sync: (...a) => api.sync(...a).then(relax),
     submit: (...a) => api.submit(...a).then(relax),
     uploadSnapshot: (...a) => api.uploadSnapshot(...a),
+    askAssistant: (...a) => api.askAssistant(...a),
   };
 }

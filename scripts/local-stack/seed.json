@@ -1,0 +1,24 @@
+{
+  "//": "TEST-ONLY accounts for the local stack (npm run local:db). They work nowhere else: the local stack keeps everything in memory and never talks to Supabase.",
+  "staff": [
+    {
+      "email": "local.admin@zycus.com",
+      "password": "Qu2reWCTNwXxCR_U",
+      "full_name": "Local Super Admin",
+      "role": "super_admin"
+    },
+    {
+      "email": "local.recruiter@zycus.com",
+      "password": "vqrwavyMev7vtNs4",
+      "full_name": "Local Recruiter",
+      "role": "recruiter"
+    },
+    {
+      "email": "local.reviewer@zycus.com",
+      "password": "1LpbRSXu50KvpcZp",
+      "full_name": "Local Reviewer",
+      "role": "reviewer"
+    }
+  ],
+  "workerSecret": "GPGWltSluk_436-tQqdZ46IPagkBOANcLCIay9KKb04"
+}

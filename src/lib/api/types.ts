@@ -22,7 +22,11 @@ export type ServerErrorCode =
   | 'NO_QUESTIONS'
   | 'NOT_STARTED'
   | 'SUBMITTED'
-  | 'INVALID_PAYLOAD';
+  | 'INVALID_PAYLOAD'
+  | 'ASSISTANT_DISABLED'
+  | 'ASSISTANT_LIMIT'
+  | 'ASSISTANT_COOLDOWN'
+  | 'ASSISTANT_UNAVAILABLE';
 
 /** NETWORK: request never got a response (offline, timeout). UNKNOWN: unexpected server reply. */
 export type CandidateErrorCode = ServerErrorCode | 'NETWORK' | 'UNKNOWN';
@@ -47,6 +51,10 @@ export interface SessionState {
   violationCount: number;
   /** Counted violations per type, as recorded by the server. */
   violationCounts: Record<string, number>;
+  /** Raised each time staff reopen the test with fresh warnings: the device drops its own counts. */
+  violationsResetCount: number;
+  /** Coding-assistant requests already used in this session. */
+  aiUsed: number;
   candidate: { fullName: string; email: string };
   template: {
     name: string;
@@ -164,6 +172,24 @@ export interface SnapshotUpload {
   jpegB64: string;
 }
 
+/** One exchange with the coding assistant (limited hints, never solutions). */
+export interface AssistantRequest {
+  questionId: string;
+  message: string;
+  /** File the candidate is looking at, for context. */
+  filePath: string | null;
+  /** Code the candidate selected (optional, capped). */
+  code: string | null;
+  /** The last few exchanges, oldest first. */
+  history: { role: 'user' | 'assistant'; content: string }[];
+}
+
+export interface AssistantReply {
+  reply: string;
+  remaining: number;
+  cooldownSeconds: number;
+}
+
 export interface CandidateApi {
   readonly kind: 'supabase' | 'mock';
   ping(): Promise<ApiResult<{ serverNowMs: number }>>;
@@ -187,4 +213,5 @@ export interface CandidateApi {
   ): Promise<ApiResult<{ state: SessionState; accepted: SyncAccepted }>>;
   submit(token: string, payload: SyncPayload): Promise<ApiResult<{ state: SessionState }>>;
   uploadSnapshot(token: string, snapshot: SnapshotUpload): Promise<ApiResult<{ snapshotId: string }>>;
+  askAssistant(token: string, request: AssistantRequest): Promise<ApiResult<AssistantReply>>;
 }

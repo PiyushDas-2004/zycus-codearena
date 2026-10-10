@@ -12,7 +12,10 @@ beforeAll(async () => {
 });
 afterAll(async () => db?.close());
 
-/** Functions anon may call: the candidate API. Anything else callable by anon fails the suite. */
+/**
+ * Functions anon may call: the candidate API, and the assistant worker's two functions (they check
+ * the worker's secret). Anything else callable by anon fails the suite.
+ */
 const ANON_CALLABLE = new Set<string>([
   'public.ping',
   'public.candidate_login',
@@ -23,6 +26,10 @@ const ANON_CALLABLE = new Set<string>([
   'public.candidate_sync',
   'public.candidate_submit',
   'public.candidate_upload_snapshot',
+  'public.candidate_ai_ask',
+  'public.candidate_ai_result',
+  'public.assistant_worker_next',
+  'public.assistant_worker_finish',
 ]);
 
 describe('schema invariants', () => {
@@ -33,10 +40,13 @@ describe('schema invariants', () => {
     expect(rows.map((r) => r.t)).toEqual(
       [
         'private.app_secrets',
+        'private.assistant_budget',
+        'private.assistant_worker',
         'private.health_probes',
         'private.invitation_secrets',
         'private.login_attempts',
         'private.session_secrets',
+        'public.ai_interactions',
         'public.app_settings',
         'public.audit_log',
         'public.backup_imports',
@@ -123,6 +133,32 @@ describe('schema invariants', () => {
       where n.nspname in ('public','private') and p.prosecdef
         and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')`);
     expect(rows).toEqual([]);
+  });
+
+  it('gives every UPDATE and DELETE in a function a WHERE clause', async () => {
+    // Supabase runs API calls with pg-safeupdate, which rejects UPDATE/DELETE without WHERE ("UPDATE
+    // requires a WHERE clause"). The SQL Editor and PGlite don't, so only this check catches it.
+    // Single-row tables use `where id` (their key is the boolean true).
+    const { rows } = await db.query<{ fn: string; src: string }>(`
+      select n.nspname || '.' || p.proname as fn, p.prosrc as src
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname in ('public','private') and p.prolang in (
+        select oid from pg_language where lanname in ('sql', 'plpgsql'))`);
+    const offenders = rows.flatMap(({ fn, src }) =>
+      src
+        .replace(/--[^\n]*/g, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .split(';')
+        .filter(
+          (stmt) =>
+            (/\bupdate\s+[\w."]+\s+(?:(?:as\s+)?\w+\s+)?set\b/i.test(stmt) &&
+              !/\bdo\s+update\s+set\b/i.test(stmt)) ||
+            /\bdelete\s+from\b/i.test(stmt),
+        )
+        .filter((stmt) => !/\bwhere\b/i.test(stmt))
+        .map((stmt) => `${fn}: ${stmt.trim().replace(/\s+/g, ' ').slice(0, 90)}`),
+    );
+    expect(offenders).toEqual([]);
   });
 
   it('keeps the audit log append-only, even for the table owner', async () => {

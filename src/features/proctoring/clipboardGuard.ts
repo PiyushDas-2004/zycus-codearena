@@ -1,9 +1,9 @@
 /**
- * Blocks pasting into the test (editor, notes, anywhere), copying/cutting content out of it,
+ * Blocks pasting into the test (editor, text fields, anywhere), copying/cutting content out of it,
  * drag-and-drop and the context menu. Listeners run in the capture phase on window, so they see
  * every event before Monaco or React and can cancel it. The async Clipboard API is disabled too.
  *
- * Internal clipboard (optional): copy/cut inside the editor or notes goes to an in-memory buffer
+ * Internal clipboard (optional): copy/cut inside the editor or a text field goes to an in-memory buffer
  * instead of the system clipboard, and paste inserts that buffer, so candidates can move their own
  * code around while nothing from outside can come in and nothing can leave.
  */
@@ -52,7 +52,7 @@ export function installClipboardGuard(o: ClipboardGuardOptions): () => void {
     return editor && dom && t instanceof Node && dom.contains(t) ? editor : null;
   };
   const where = (editor: GuardedEditor | null, field: TextField | null) =>
-    editor ? 'editor' : field ? 'notes' : 'page';
+    editor ? 'editor' : field ? 'text_field' : 'page';
 
   const onCopyOrCut = (e: ClipboardEvent) => {
     const cut = e.type === 'cut';

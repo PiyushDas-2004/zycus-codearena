@@ -1,0 +1,106 @@
+// Type declarations for the editor: the Jest-compatible globals of the test sandbox
+// (src/features/runner/sandbox/harness.ts).
+declare type JestFn = (...args: any[]) => any;
+
+declare interface JestMock<T extends JestFn = JestFn> {
+  (...args: Parameters<T>): ReturnType<T>;
+  mock: { calls: Parameters<T>[]; results: { type: 'return' | 'throw'; value: any }[]; instances: any[] };
+  mockImplementation(fn: T): JestMock<T>;
+  mockImplementationOnce(fn: T): JestMock<T>;
+  mockReturnValue(value: ReturnType<T>): JestMock<T>;
+  mockReturnValueOnce(value: ReturnType<T>): JestMock<T>;
+  mockResolvedValue(value: Awaited<ReturnType<T>>): JestMock<T>;
+  mockResolvedValueOnce(value: Awaited<ReturnType<T>>): JestMock<T>;
+  mockRejectedValue(reason: unknown): JestMock<T>;
+  mockRejectedValueOnce(reason: unknown): JestMock<T>;
+  mockClear(): JestMock<T>;
+  mockReset(): JestMock<T>;
+  mockRestore(): void;
+  mockName(name: string): JestMock<T>;
+  getMockName(): string;
+}
+
+declare interface JestMatchers {
+  toBe(expected: unknown): void;
+  toEqual(expected: unknown): void;
+  toStrictEqual(expected: unknown): void;
+  toBeTruthy(): void;
+  toBeFalsy(): void;
+  toBeNull(): void;
+  toBeUndefined(): void;
+  toBeDefined(): void;
+  toBeNaN(): void;
+  toBeInstanceOf(expected: unknown): void;
+  toBeGreaterThan(expected: number | bigint): void;
+  toBeGreaterThanOrEqual(expected: number | bigint): void;
+  toBeLessThan(expected: number | bigint): void;
+  toBeLessThanOrEqual(expected: number | bigint): void;
+  toBeCloseTo(expected: number, numDigits?: number): void;
+  toContain(expected: unknown): void;
+  toContainEqual(expected: unknown): void;
+  toHaveLength(expected: number): void;
+  toHaveProperty(path: string | string[], value?: unknown): void;
+  toMatch(expected: string | RegExp): void;
+  toMatchObject(expected: object): void;
+  toThrow(expected?: string | RegExp | (new (...args: any[]) => Error)): void;
+  toThrowError(expected?: string | RegExp | (new (...args: any[]) => Error)): void;
+  toHaveBeenCalled(): void;
+  toHaveBeenCalledTimes(expected: number): void;
+  toHaveBeenCalledWith(...args: unknown[]): void;
+  toHaveBeenLastCalledWith(...args: unknown[]): void;
+  toHaveBeenNthCalledWith(n: number, ...args: unknown[]): void;
+  toBeCalled(): void;
+  toBeCalledTimes(expected: number): void;
+  toBeCalledWith(...args: unknown[]): void;
+}
+declare interface JestAsyncMatchers {
+  [K: string]: (...args: any[]) => Promise<void>;
+}
+declare interface JestExpectation extends JestMatchers {
+  not: JestMatchers;
+  resolves: JestAsyncMatchers & { not: JestAsyncMatchers };
+  rejects: JestAsyncMatchers & { not: JestAsyncMatchers; toThrow(expected?: string | RegExp): Promise<void> };
+}
+
+declare const expect: {
+  (actual: unknown): JestExpectation;
+  any(constructor: unknown): any;
+  anything(): any;
+  stringContaining(text: string): any;
+  stringMatching(pattern: string | RegExp): any;
+  objectContaining(object: object): any;
+  arrayContaining(items: unknown[]): any;
+  assertions(n: number): void;
+  hasAssertions(): void;
+};
+
+declare const jest: {
+  fn<T extends JestFn = JestFn>(implementation?: T): JestMock<T>;
+  spyOn<O extends object, K extends keyof O>(object: O, method: K): JestMock<any>;
+  clearAllMocks(): void;
+  resetAllMocks(): void;
+  restoreAllMocks(): void;
+  isMockFunction(fn: unknown): boolean;
+  useFakeTimers(): typeof jest;
+  useRealTimers(): typeof jest;
+  advanceTimersByTime(ms: number): void;
+  advanceTimersByTimeAsync(ms: number): Promise<void>;
+  runAllTimers(): void;
+  runOnlyPendingTimers(): void;
+  getTimerCount(): number;
+  setSystemTime(now: number | Date): void;
+  now(): number;
+};
+
+declare type JestHook = () => void | Promise<unknown>;
+declare type JestTest = (name: string, fn: () => void | Promise<unknown>, timeout?: number) => void;
+declare const describe: ((name: string, fn: () => void) => void) & {
+  skip(name: string, fn: () => void): void;
+  only(name: string, fn: () => void): void;
+};
+declare const it: JestTest & { skip: JestTest; only: JestTest; todo(name: string): void };
+declare const test: typeof it;
+declare function beforeAll(fn: JestHook): void;
+declare function afterAll(fn: JestHook): void;
+declare function beforeEach(fn: JestHook): void;
+declare function afterEach(fn: JestHook): void;

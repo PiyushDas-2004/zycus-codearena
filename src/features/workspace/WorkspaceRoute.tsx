@@ -1,6 +1,7 @@
 import type * as Monaco from 'monaco-editor';
 import { useEffect, useState } from 'react';
-import { Group, Panel, Separator } from 'react-resizable-panels';
+import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels';
+import { useShallow } from 'zustand/react/shallow';
 import { appConfig } from '@/config/app.config';
 import { Button, Card, LoadingState, toast } from '@/design/components';
 import { applyTheme } from '@/design/theme';
@@ -23,7 +24,14 @@ import { acquireTabLock, type TabLock } from '../proctoring/tabLock';
 import { OfflineBanner, StaffMessageDialog, SubmitDialog, SubmittingOverlay } from './components/Dialogs';
 import { EditorPane } from './components/EditorPane';
 import { ProblemPane } from './components/ProblemPane';
-import { QuestionNavigator } from './components/QuestionNavigator';
+import { QuestionsFlyout } from './components/QuestionsFlyout';
+import { ActivityBar } from './components/ActivityBar';
+import { FilesPanel } from './components/FileTree';
+import { treeWidthFor } from './components/fileTreeModel';
+import { AssistantPanel } from '../assistant/AssistantPanel';
+import { hasRunnableTests } from '../runner/runController';
+import { TestPanel } from '../runner/TestPanel';
+import { useTestRuns } from '../runner/testRunStore';
 import { WindowTooSmall } from './components/WindowTooSmall';
 import { Countdown, WorkspaceHeader } from './components/WorkspaceHeader';
 import { setupMonaco } from './editor/monacoSetup';
@@ -116,6 +124,7 @@ function WorkspaceLoader({ state }: { state: SessionState }) {
       await saveRecord(record);
       if (disposed) return;
       useWorkspaceUi.getState().reset();
+      useTestRuns.getState().reset();
       controller = new WorkspaceController({
         monaco,
         api,
@@ -248,6 +257,16 @@ function Workspace({ state, controller, proctor, monaco }: WorkspaceProps) {
   const submitPhase = useWorkspaceUi((s) => s.submitPhase);
   const set = useWorkspaceUi((s) => s.set);
   const theme = useWorkspaceUi((s) => s.prefs.theme);
+  const statementCollapsed = useWorkspaceUi((s) => s.statementCollapsed);
+  const statementRef = usePanelRef();
+  const filesRef = usePanelRef();
+  useFitFilesPane(filesRef);
+  const toggleStatement = () => {
+    const panel = statementRef.current;
+    if (!panel) return;
+    if (panel.isCollapsed()) panel.expand();
+    else panel.collapse();
+  };
   // Dark mode is a workspace-only option: applied while the workspace is open, light elsewhere.
   useEffect(() => applyTheme(theme), [theme]);
   useEffect(() => () => applyTheme('light'), []);
@@ -263,16 +282,43 @@ function Workspace({ state, controller, proctor, monaco }: WorkspaceProps) {
       />
       <OfflineBanner />
       <div className="flex min-h-0 flex-1">
-        <QuestionNavigator controller={controller} />
-        <Group orientation="horizontal" className="min-w-0 flex-1">
-          <Panel defaultSize="38" minSize="22">
-            <ProblemPane controller={controller} protectContent={proctoring.copyProtection.enabled} />
-          </Panel>
-          <Separator className="w-1.5 bg-border transition-colors hover:bg-separator-hover" />
-          <Panel minSize="35">
-            <EditorPane controller={controller} monaco={monaco} proctoring={proctoring} />
-          </Panel>
-        </Group>
+        <ActivityBar assistantEnabled={proctoring.aiAssistant.enabled} onToggleStatement={toggleStatement} />
+        <div className="relative min-w-0 flex-1">
+          <Group orientation="horizontal" className="h-full">
+            <Panel
+              id="statement"
+              panelRef={statementRef}
+              collapsible
+              collapsedSize={0}
+              defaultSize="28"
+              minSize={260}
+              onResize={(size) => {
+                const collapsed = size.inPixels < 1;
+                if (collapsed !== useWorkspaceUi.getState().statementCollapsed)
+                  set({ statementCollapsed: collapsed });
+              }}
+            >
+              <div className="relative h-full">
+                <ProblemPane controller={controller} protectContent={proctoring.copyProtection.enabled} />
+                {!statementCollapsed && <FlyoutLayer controller={controller} proctoring={proctoring} />}
+              </div>
+            </Panel>
+            <Separator className="w-1 bg-border transition-colors hover:bg-separator-hover data-[separator=active]:bg-primary" />
+            <Panel id="files" panelRef={filesRef} defaultSize="19" minSize={150} maxSize="35">
+              <FilesPanel controller={controller} />
+            </Panel>
+            <Separator className="w-1 bg-border transition-colors hover:bg-separator-hover data-[separator=active]:bg-primary" />
+            <Panel id="editor" minSize={380}>
+              <CodeColumn controller={controller} monaco={monaco} proctoring={proctoring} />
+            </Panel>
+          </Group>
+          {/* Statement hidden: the flyouts float over the left edge instead. */}
+          {statementCollapsed && (
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-30 w-[min(380px,45%)]">
+              <FlyoutLayer controller={controller} proctoring={proctoring} />
+            </div>
+          )}
+        </div>
       </div>
       <footer className="flex h-7 shrink-0 items-center justify-between border-t border-border bg-surface px-4 text-[11px] text-muted">
         <span>{appConfig.footerText(new Date().getFullYear())}</span>
@@ -291,6 +337,90 @@ function Workspace({ state, controller, proctor, monaco }: WorkspaceProps) {
             `Session ${state.sessionId.slice(0, 8)} · ${appConfig.watermarkLabel}`,
           ]}
         />
+      )}
+    </div>
+  );
+}
+
+let measureCanvas: CanvasRenderingContext2D | null | undefined;
+const measureName = (text: string) => {
+  measureCanvas ??= document.createElement('canvas').getContext('2d');
+  if (!measureCanvas) return text.length * 7.5;
+  measureCanvas.font = '13px "Inter Variable", Inter, system-ui, sans-serif';
+  return measureCanvas.measureText(text).width;
+};
+
+/**
+ * Widens the file pane when a question's file names wouldn't fit (deep Java packages), up to the
+ * pane's maximum. It never narrows it: a width the candidate chose stays.
+ */
+function useFitFilesPane(filesRef: ReturnType<typeof usePanelRef>) {
+  const questionId = useWorkspaceUi((s) => s.currentQuestionId);
+  useEffect(() => {
+    const panel = filesRef.current;
+    const q = useWorkspaceUi.getState().questions.find((x) => x.questionId === questionId);
+    if (!panel || !q) return;
+    const needed = treeWidthFor(q.files, measureName);
+    if (needed > panel.getSize().inPixels) panel.resize(needed);
+  }, [filesRef, questionId]);
+}
+
+/** The editor, with the test results under it for questions that have runnable tests. */
+function CodeColumn({
+  controller,
+  monaco,
+  proctoring,
+}: {
+  controller: WorkspaceController;
+  monaco: typeof Monaco;
+  proctoring: ProctoringConfig;
+}) {
+  const { questionId, runnable } = useWorkspaceUi(
+    useShallow((s) => {
+      const q = s.questions.find((x) => x.questionId === s.currentQuestionId);
+      return { questionId: q?.questionId ?? null, runnable: !!q && hasRunnableTests(q.files) };
+    }),
+  );
+  const revealSignal = useTestRuns((s) => s.revealSignal);
+  return (
+    <EditorPane
+      controller={controller}
+      monaco={monaco}
+      proctoring={proctoring}
+      revealBottom={revealSignal}
+      bottom={
+        runnable && questionId ? (
+          <TestPanel controller={controller} monaco={monaco} questionId={questionId} />
+        ) : undefined
+      }
+    />
+  );
+}
+
+/**
+ * The question list (while hovered) or the coding assistant (while toggled on), drawn over the
+ * statement so the file tree and the code are never covered.
+ */
+function FlyoutLayer({
+  controller,
+  proctoring,
+}: {
+  controller: WorkspaceController;
+  proctoring: ProctoringConfig;
+}) {
+  const { questionsOpen, assistantOpen } = useWorkspaceUi(
+    useShallow((s) => ({
+      questionsOpen: s.questionsOpen,
+      assistantOpen: s.assistantOpen && proctoring.aiAssistant.enabled,
+    })),
+  );
+  if (!questionsOpen && !assistantOpen) return null;
+  return (
+    <div className="pointer-events-auto absolute inset-0 z-20 overflow-hidden border-r border-border bg-surface shadow-lg">
+      {questionsOpen ? (
+        <QuestionsFlyout controller={controller} />
+      ) : (
+        <AssistantPanel controller={controller} maxRequests={proctoring.aiAssistant.maxRequests} />
       )}
     </div>
   );
@@ -317,7 +447,7 @@ function useTimeKeeping(controller: WorkspaceController, remaining: number | nul
         title,
         show <= 5
           ? 'Your work will be submitted automatically when time runs out.'
-          : 'Make sure your explanations are up to date.',
+          : 'Your work is saved automatically. Leave yourself time to check your fixes.',
       );
       controller.report('warning_shown', { kind: 'time', minutes: show });
     }

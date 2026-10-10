@@ -162,7 +162,7 @@ export class ProctoringController {
     if (c.webcam.enabled) void this.startCamera();
     if (c.microphone.enabled) void this.startMicrophone();
 
-    // Blocked → the editor and notes are read-only until the condition is resolved.
+    // Blocked → the editor and text fields are read-only until the condition is resolved.
     this.disposers.push(
       useProctoring.subscribe((s, prev) => {
         if (s.blockers.length !== prev.blockers.length) {

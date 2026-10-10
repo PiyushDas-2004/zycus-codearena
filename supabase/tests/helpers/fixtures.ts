@@ -2,7 +2,8 @@ import type { PGlite } from '@electric-sql/pglite';
 import type { Claims } from './db';
 
 export const TEMPLATE_ID = '704cf1f2-2916-4eb4-a7b6-cc9894509b41';
-export const Q_RN = 'f50a2b49-3263-4569-bd97-ff8835a45436';
+/** Question 1 of the seeded template (rn-approvals-inbox). */
+export const Q_RN = '9249d0ed-6c2c-4ea4-80f9-48645dbf737a';
 /** Extra question used only in candidate B's session, to test per-question reviewer scoping. */
 export const Q_EXTRA = '11111111-2222-4333-8444-555555555555';
 

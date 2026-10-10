@@ -49,7 +49,7 @@ function BlockingOverlay({ blocker, proctor }: { blocker: Blocker; proctor: Proc
     icon = <MonitorX className="size-7" aria-hidden="true" />;
     title = 'Disconnect the extra display';
     body =
-      'Only one display may be connected during the assessment. Disconnect the other display, or set your displays to mirror (duplicate). The assessment continues automatically.';
+      'Only one display may be connected during the assessment. Disconnect the other display (or press Windows key + P and choose "PC screen only"). The assessment continues automatically; your timer is still running.';
   } else {
     icon = <Maximize className="size-7" aria-hidden="true" />;
     title = 'Return to full screen';

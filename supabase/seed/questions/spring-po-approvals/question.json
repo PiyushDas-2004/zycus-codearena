@@ -1,0 +1,233 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "04a206ea-655a-40fd-9651-b01088d59d98",
+  "slug": "spring-po-approvals",
+  "title": "PO Approvals: transactions, idempotency and concurrency (Spring Boot)",
+  "category": "Spring Boot debugging",
+  "role_tags": [
+    "lead-react-native-developer",
+    "full-stack-developer",
+    "java-developer"
+  ],
+  "skill_tags": [
+    "spring-boot",
+    "spring-data-jpa",
+    "hibernate",
+    "transactions",
+    "idempotency",
+    "concurrency",
+    "postgresql"
+  ],
+  "difficulty": "hard",
+  "time_suggestion_minutes": 45,
+  "is_sample": false,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    {
+      "path": "src/main/java/com/zycus/procurement/po/ApprovalService.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/ApprovalService.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PurchaseOrderController.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PurchaseOrderController.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/InvoiceMatcher.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/InvoiceMatcher.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PurchaseOrderRepository.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PurchaseOrderRepository.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/IdempotencyRecordRepository.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/IdempotencyRecordRepository.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PurchaseOrder.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PurchaseOrder.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/IdempotencyRecord.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/IdempotencyRecord.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/ApiExceptionHandler.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/ApiExceptionHandler.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PurchaseOrderLine.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PurchaseOrderLine.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PoStatus.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PoStatus.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/Dtos.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/Dtos.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/BudgetService.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/BudgetService.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/BudgetExceededException.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/BudgetExceededException.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PoNotFoundException.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PoNotFoundException.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/resources/application.yml",
+      "language": "yaml",
+      "content": "@file:files/src/main/resources/application.yml",
+      "readonly": true
+    },
+    {
+      "path": "src/test/java/com/zycus/procurement/po/ApprovalServiceIT.java",
+      "language": "java",
+      "content": "@file:files/src/test/java/com/zycus/procurement/po/ApprovalServiceIT.java",
+      "readonly": true
+    },
+    {
+      "path": "src/test/java/com/zycus/procurement/po/InvoiceMatcherTest.java",
+      "language": "java",
+      "content": "@file:files/src/test/java/com/zycus/procurement/po/InvoiceMatcherTest.java",
+      "readonly": true
+    },
+    {
+      "path": "checks/transactions.test.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/transactions.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "checks/approvals.test.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/approvals.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "checks/invoices.test.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/invoices.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "checks/inbox.test.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/inbox.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "checks/support/java.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/support/java.ts",
+      "readonly": true
+    },
+    {
+      "path": "pom.xml",
+      "language": "xml",
+      "content": "@file:files/pom.xml",
+      "readonly": true
+    }
+  ],
+  "rubric": [
+    {
+      "key": "transactions",
+      "criterion": "Rejections are saved and refused approvals roll back",
+      "description": "Explains readOnly ⇒ no flush (method-level @Transactional on reject) and that checked exceptions don't roll back by default (rollbackFor).",
+      "max_points": 5
+    },
+    {
+      "key": "batch",
+      "criterion": "Batch approvals are isolated per PO",
+      "description": "Explains that self-invocation bypasses the proxy so REQUIRES_NEW was ignored; uses a separate bean, TransactionTemplate or the proxy; per-PO runtime failures are reported, not fatal.",
+      "max_points": 4
+    },
+    {
+      "key": "idempotency",
+      "criterion": "Idempotency is atomic and scoped",
+      "description": "Claims the key atomically (unique (approver, key) + insert-first / on conflict, replay in a new transaction if needed); scopes keys per approver; refuses key reuse for another PO (422).",
+      "max_points": 5
+    },
+    {
+      "key": "concurrency",
+      "criterion": "Two-person rule and concurrent approvers",
+      "description": "Records who approved and refuses a repeat approver; @Version (or a pessimistic lock) with OptimisticLockingFailureException mapped to 409.",
+      "max_points": 4
+    },
+    {
+      "key": "invoice",
+      "criterion": "Invoice matching is correct",
+      "description": "compareTo instead of BigDecimal.equals; sums quantities per SKU; loads lines without open-in-view (entity graph / fetch join / transactional service), not EAGER.",
+      "max_points": 4
+    },
+    {
+      "key": "paging",
+      "criterion": "Inbox paging is correct and paged in the database",
+      "description": "1-based → 0-based with validation; stable sort (createdAt desc, id desc); no in-memory pagination of a collection fetch (two-step ids query, DTO projection or batch fetching).",
+      "max_points": 3
+    }
+  ],
+  "reference_solution": {
+    "notes_md": "@file:solution/notes.md",
+    "files": [
+      {
+        "path": "src/main/java/com/zycus/procurement/po/ApprovalService.java",
+        "content": "@file:solution/files/src/main/java/com/zycus/procurement/po/ApprovalService.java"
+      },
+      {
+        "path": "src/main/java/com/zycus/procurement/po/PurchaseOrderController.java",
+        "content": "@file:solution/files/src/main/java/com/zycus/procurement/po/PurchaseOrderController.java"
+      },
+      {
+        "path": "src/main/java/com/zycus/procurement/po/InvoiceMatcher.java",
+        "content": "@file:solution/files/src/main/java/com/zycus/procurement/po/InvoiceMatcher.java"
+      },
+      {
+        "path": "src/main/java/com/zycus/procurement/po/PurchaseOrderRepository.java",
+        "content": "@file:solution/files/src/main/java/com/zycus/procurement/po/PurchaseOrderRepository.java"
+      },
+      {
+        "path": "src/main/java/com/zycus/procurement/po/IdempotencyRecordRepository.java",
+        "content": "@file:solution/files/src/main/java/com/zycus/procurement/po/IdempotencyRecordRepository.java"
+      },
+      {
+        "path": "src/main/java/com/zycus/procurement/po/PurchaseOrder.java",
+        "content": "@file:solution/files/src/main/java/com/zycus/procurement/po/PurchaseOrder.java"
+      },
+      {
+        "path": "src/main/java/com/zycus/procurement/po/IdempotencyRecord.java",
+        "content": "@file:solution/files/src/main/java/com/zycus/procurement/po/IdempotencyRecord.java"
+      },
+      {
+        "path": "src/main/java/com/zycus/procurement/po/ApiExceptionHandler.java",
+        "content": "@file:solution/files/src/main/java/com/zycus/procurement/po/ApiExceptionHandler.java"
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "a7dcbe6c-f122-4051-8368-41c2659815d7",
+  "slug": "rn-live-auction",
+  "title": "Live Reverse Auction: timers, listeners and rendering (React Native)",
+  "category": "React Native debugging",
+  "role_tags": ["lead-react-native-developer", "react-native-developer"],
+  "skill_tags": ["react-native", "timers", "app-state", "navigation", "performance", "money"],
+  "difficulty": "hard",
+  "time_suggestion_minutes": 35,
+  "is_sample": false,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    { "path": "src/screens/AuctionScreen.tsx", "language": "typescript", "content": "@file:files/src/screens/AuctionScreen.tsx" },
+    { "path": "src/components/BidBoard.tsx", "language": "typescript", "content": "@file:files/src/components/BidBoard.tsx" },
+    { "path": "src/hooks/useCountdown.ts", "language": "typescript", "content": "@file:files/src/hooks/useCountdown.ts" },
+    { "path": "src/hooks/useAuctionListeners.ts", "language": "typescript", "content": "@file:files/src/hooks/useAuctionListeners.ts" },
+    { "path": "src/utils/money.ts", "language": "typescript", "content": "@file:files/src/utils/money.ts" },
+    { "path": "src/realtime/auctionSocket.ts", "language": "typescript", "content": "@file:files/src/realtime/auctionSocket.ts", "readonly": true },
+    { "path": "src/debug/renderCounter.ts", "language": "typescript", "content": "@file:files/src/debug/renderCounter.ts", "readonly": true },
+    { "path": "src/types.ts", "language": "typescript", "content": "@file:files/src/types.ts", "readonly": true },
+    { "path": "__tests__/useCountdown.test.ts", "language": "typescript", "content": "@file:files/__tests__/useCountdown.test.ts", "readonly": true },
+    { "path": "__tests__/listeners.test.ts", "language": "typescript", "content": "@file:files/__tests__/listeners.test.ts", "readonly": true },
+    { "path": "__tests__/BidBoard.test.tsx", "language": "typescript", "content": "@file:files/__tests__/BidBoard.test.tsx", "readonly": true },
+    { "path": "__tests__/money.test.ts", "language": "typescript", "content": "@file:files/__tests__/money.test.ts", "readonly": true },
+    { "path": "package.json", "language": "json", "content": "@file:files/package.json", "readonly": true }
+  ],
+  "rubric": [
+    { "key": "countdown", "criterion": "Countdown survives extensions and backgrounding", "description": "Depends on closesAt and recomputes immediately; derives remaining time from the wall clock each tick.", "max_points": 6 },
+    { "key": "listeners", "criterion": "No listener leaks", "description": "useFocusEffect with useCallback and one stable handler (same reference for on/off); latest callback via ref; AppState subscription removed in cleanup.", "max_points": 6 },
+    { "key": "rendering", "criterion": "Rows re-render only when their data changes", "description": "Stable onSelect, no inline style objects, memoised renderItem/board; explains memo's identity comparison.", "max_points": 5 },
+    { "key": "money", "criterion": "Correct money arithmetic and formatting", "description": "Compares integer paise; formats with Intl (en-IN, INR).", "max_points": 3 },
+    { "key": "code_quality", "criterion": "Root-cause fixes, clean code", "description": "No sleeps, no test special-casing, no isMounted flags; instrumentation kept.", "max_points": 2 }
+  ],
+  "reference_solution": {
+    "notes_md": "@file:solution/notes.md",
+    "files": [
+      { "path": "src/hooks/useCountdown.ts", "content": "@file:solution/files/src/hooks/useCountdown.ts" },
+      { "path": "src/hooks/useAuctionListeners.ts", "content": "@file:solution/files/src/hooks/useAuctionListeners.ts" },
+      { "path": "src/utils/money.ts", "content": "@file:solution/files/src/utils/money.ts" },
+      { "path": "src/components/BidBoard.tsx", "content": "@file:solution/files/src/components/BidBoard.tsx" },
+      { "path": "src/screens/AuctionScreen.tsx", "content": "@file:solution/files/src/screens/AuctionScreen.tsx" }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "9249d0ed-6c2c-4ea4-80f9-48645dbf737a",
+  "slug": "rn-approvals-inbox",
+  "title": "Approvals Inbox: session, networking and list state (React Native)",
+  "category": "React Native debugging",
+  "role_tags": ["lead-react-native-developer", "react-native-developer"],
+  "skill_tags": ["react-native", "async", "auth", "react-hooks", "flatlist", "concurrency"],
+  "difficulty": "hard",
+  "time_suggestion_minutes": 35,
+  "is_sample": false,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    { "path": "src/api/httpClient.ts", "language": "typescript", "content": "@file:files/src/api/httpClient.ts" },
+    { "path": "src/auth/sessionStore.ts", "language": "typescript", "content": "@file:files/src/auth/sessionStore.ts" },
+    { "path": "src/hooks/useApprovals.ts", "language": "typescript", "content": "@file:files/src/hooks/useApprovals.ts" },
+    { "path": "src/state/approvals.ts", "language": "typescript", "content": "@file:files/src/state/approvals.ts" },
+    { "path": "src/screens/ApprovalsList.tsx", "language": "typescript", "content": "@file:files/src/screens/ApprovalsList.tsx" },
+    { "path": "src/types.ts", "language": "typescript", "content": "@file:files/src/types.ts", "readonly": true },
+    { "path": "__tests__/httpClient.test.ts", "language": "typescript", "content": "@file:files/__tests__/httpClient.test.ts", "readonly": true },
+    { "path": "__tests__/sessionStore.test.ts", "language": "typescript", "content": "@file:files/__tests__/sessionStore.test.ts", "readonly": true },
+    { "path": "__tests__/useApprovals.test.tsx", "language": "typescript", "content": "@file:files/__tests__/useApprovals.test.tsx", "readonly": true },
+    { "path": "__tests__/approvals.test.tsx", "language": "typescript", "content": "@file:files/__tests__/approvals.test.tsx", "readonly": true },
+    { "path": "__tests__/ApprovalsList.test.tsx", "language": "typescript", "content": "@file:files/__tests__/ApprovalsList.test.tsx", "readonly": true },
+    { "path": "__tests__/support/fakeServer.ts", "language": "typescript", "content": "@file:files/__tests__/support/fakeServer.ts", "readonly": true },
+    { "path": "package.json", "language": "json", "content": "@file:files/package.json", "readonly": true }
+  ],
+  "rubric": [
+    { "key": "single_flight_refresh", "criterion": "Token refresh is single-flight", "description": "One shared refresh promise; concurrent 401s wait for it; a request sent before the refresh retries with the current token without refreshing again; onLogout fires once.", "max_points": 6 },
+    { "key": "abort_per_request", "criterion": "Each request gets its own AbortController", "description": "New controller per effect run, aborted in cleanup; aborted results ignored; no stuck spinner, no out-of-order overwrite.", "max_points": 5 },
+    { "key": "per_item_rollback", "criterion": "Optimistic updates roll back per item", "description": "Rolls back only the failed row to its previous status with an error; other rows' successes are kept.", "max_points": 5 },
+    { "key": "hydration", "criterion": "Session hydration race fixed", "description": "Requests and mutations wait for the stored session; startup token saves aren't lost or overwritten.", "max_points": 4 },
+    { "key": "list_identity", "criterion": "List identity and layout", "description": "keyExtractor and expanded state use item.id; getItemLayout includes the separator.", "max_points": 3 },
+    { "key": "code_quality", "criterion": "Root-cause fixes, clean code", "description": "Fixes are minimal and well-reasoned; no test special-casing, sleeps or swallowed errors.", "max_points": 2 }
+  ],
+  "reference_solution": {
+    "notes_md": "@file:solution/notes.md",
+    "files": [
+      { "path": "src/api/httpClient.ts", "content": "@file:solution/files/src/api/httpClient.ts" },
+      { "path": "src/auth/sessionStore.ts", "content": "@file:solution/files/src/auth/sessionStore.ts" },
+      { "path": "src/hooks/useApprovals.ts", "content": "@file:solution/files/src/hooks/useApprovals.ts" },
+      { "path": "src/state/approvals.ts", "content": "@file:solution/files/src/state/approvals.ts" },
+      { "path": "src/screens/ApprovalsList.tsx", "content": "@file:solution/files/src/screens/ApprovalsList.tsx" }
+    ]
+  }
+}

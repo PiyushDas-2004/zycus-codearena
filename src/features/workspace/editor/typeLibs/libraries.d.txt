@@ -1,0 +1,184 @@
+// Type declarations for the editor: AsyncStorage, React Navigation (focus lifecycle) and the
+// sandbox's test helpers (src/features/runner/sandbox/testUtils.ts).
+declare module '@react-native-async-storage/async-storage' {
+  const AsyncStorage: {
+    getItem(key: string): Promise<string | null>;
+    setItem(key: string, value: string): Promise<void>;
+    removeItem(key: string): Promise<void>;
+    mergeItem(key: string, value: string): Promise<void>;
+    clear(): Promise<void>;
+    getAllKeys(): Promise<readonly string[]>;
+    multiGet(keys: readonly string[]): Promise<readonly [string, string | null][]>;
+    multiSet(keyValuePairs: [string, string][]): Promise<void>;
+    multiRemove(keys: readonly string[]): Promise<void>;
+  };
+  export default AsyncStorage;
+}
+
+declare module '@react-navigation/native' {
+  import type { EffectCallback } from 'react';
+  /** Runs `effect` when the screen gains focus and its cleanup when it loses focus. */
+  export function useFocusEffect(effect: EffectCallback): void;
+  export function useIsFocused(): boolean;
+  export function useNavigation<T = { navigate(name: string, params?: object): void; goBack(): void }>(): T;
+  export function useRoute<T = { params?: Record<string, unknown> }>(): T;
+}
+
+declare module '@codearena/test-utils' {
+  import type { ComponentType, ReactElement, ReactNode } from 'react';
+  import type { ReactTestInstance } from 'react-test-renderer';
+
+  export type { ReactTestInstance };
+  export type TextMatch = string | RegExp;
+  export interface WaitForOptions {
+    timeout?: number;
+    interval?: number;
+  }
+  export interface Queries {
+    getByTestId(id: string): ReactTestInstance;
+    getAllByTestId(id: string): ReactTestInstance[];
+    queryByTestId(id: string): ReactTestInstance | null;
+    queryAllByTestId(id: string): ReactTestInstance[];
+    getByText(text: TextMatch): ReactTestInstance;
+    getAllByText(text: TextMatch): ReactTestInstance[];
+    queryByText(text: TextMatch): ReactTestInstance | null;
+    queryAllByText(text: TextMatch): ReactTestInstance[];
+    findByTestId(id: string, options?: WaitForOptions): Promise<ReactTestInstance>;
+    findByText(text: TextMatch, options?: WaitForOptions): Promise<ReactTestInstance>;
+  }
+  export interface RenderResult extends Queries {
+    root: ReactTestInstance;
+    rerender(ui: ReactElement): void;
+    unmount(): void;
+    toJSON(): unknown;
+    debug(): void;
+  }
+  type Wrapper = ComponentType<{ children: ReactNode }>;
+  export function render(ui: ReactElement, options?: { wrapper?: Wrapper }): RenderResult;
+  export const screen: RenderResult;
+  export function renderHook<Result, Props = undefined>(
+    callback: (props: Props) => Result,
+    options?: { initialProps?: Props; wrapper?: Wrapper },
+  ): { result: { current: Result }; rerender(props?: Props): void; unmount(): void };
+  export const fireEvent: {
+    (element: ReactTestInstance, event: string, ...args: unknown[]): unknown;
+    press(element: ReactTestInstance): unknown;
+    changeText(element: ReactTestInstance, text: string): unknown;
+    scroll(element: ReactTestInstance, payload: unknown): unknown;
+    click(element: ReactTestInstance): unknown;
+    change(element: ReactTestInstance, init: { target: Record<string, unknown> }): unknown;
+    submit(element: ReactTestInstance): unknown;
+    keyDown(element: ReactTestInstance, init: Record<string, unknown>): unknown;
+  };
+  export function waitFor<T>(expectation: () => T, options?: WaitForOptions): Promise<T>;
+  export function flushPromises(rounds?: number): Promise<void>;
+  export function deferred<T = unknown>(): {
+    promise: Promise<T>;
+    resolve(value: T): void;
+    reject(reason: unknown): void;
+  };
+  export function act(callback: () => void): void;
+  export function act(callback: () => Promise<void>): Promise<void>;
+  export function textContent(element: ReactTestInstance | string): string;
+  /** Simulated AppState changes ('active' / 'background' / 'inactive'). */
+  export const appState: {
+    set(next: 'active' | 'background' | 'inactive'): void;
+    listenerCount(): number;
+  };
+  /** The in-memory AsyncStorage behind '@react-native-async-storage/async-storage'. */
+  export const asyncStorage: {
+    setLatency(ms: number): void;
+    seed(entries: Record<string, string>): void;
+    snapshot(): Record<string, string>;
+  };
+  /** Simulated screen focus for useFocusEffect. */
+  export const navigation: { focus(): void; blur(): void };
+  export function alerts(): { title: string; message?: string }[];
+  /** console.error messages logged during the current test (e.g. React's duplicate-key warning). */
+  export function getConsoleErrors(): string[];
+}
+
+declare module 'react-test-renderer' {
+  import type { ReactElement, ElementType } from 'react';
+  export interface ReactTestInstance {
+    instance: unknown;
+    type: ElementType | string;
+    props: { [propName: string]: any };
+    parent: ReactTestInstance | null;
+    children: Array<ReactTestInstance | string>;
+    find(predicate: (node: ReactTestInstance) => boolean): ReactTestInstance;
+    findAll(predicate: (node: ReactTestInstance) => boolean): ReactTestInstance[];
+    findByType(type: ElementType): ReactTestInstance;
+    findAllByType(type: ElementType): ReactTestInstance[];
+    findByProps(props: { [propName: string]: any }): ReactTestInstance;
+    findAllByProps(props: { [propName: string]: any }): ReactTestInstance[];
+  }
+  export interface ReactTestRenderer {
+    root: ReactTestInstance;
+    toJSON(): unknown;
+    update(next: ReactElement): void;
+    unmount(): void;
+  }
+  export function create(element: ReactElement): ReactTestRenderer;
+  export function act(callback: () => void): void;
+  export function act(callback: () => Promise<void>): Promise<void>;
+}
+
+// Java questions: Java can't run in the browser, so their checks read a model of each Java file
+// (src/shared/javaModel.ts). `import service from '../src/main/java/…/ApprovalService.java'`.
+declare module '@codearena/java' {
+  export interface JavaAnnotation {
+    /** Simple name without "@" and package, e.g. "Transactional". */
+    name: string;
+    /** The annotation as written, e.g. `@Transactional(readOnly = true)`. */
+    text: string;
+  }
+  export interface JavaField {
+    name: string;
+    type: string;
+    annotations: JavaAnnotation[];
+    modifiers: string[];
+    text: string;
+  }
+  export interface JavaParam {
+    name: string;
+    type: string;
+  }
+  export interface JavaMethod {
+    name: string;
+    returnType: string;
+    params: JavaParam[];
+    annotations: JavaAnnotation[];
+    modifiers: string[];
+    throws: string[];
+    /** The body including braces (comments removed), or null for abstract/interface methods. */
+    body: string | null;
+    text: string;
+    line: number;
+  }
+  export interface JavaType {
+    kind: 'class' | 'interface' | 'record' | 'enum';
+    name: string;
+    annotations: JavaAnnotation[];
+    modifiers: string[];
+    extends: string[];
+    implements: string[];
+    fields: JavaField[];
+    methods: JavaMethod[];
+    constructors: JavaMethod[];
+    types: JavaType[];
+    text: string;
+  }
+  export interface JavaFile {
+    package: string;
+    imports: string[];
+    types: JavaType[];
+    /** The whole file without comments. */
+    text: string;
+  }
+}
+
+declare module '*.java' {
+  const file: import('@codearena/java').JavaFile;
+  export default file;
+}

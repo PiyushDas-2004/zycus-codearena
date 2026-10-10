@@ -24,25 +24,40 @@ export function setupMonaco(): typeof monaco {
     },
   };
 
-  // Candidates edit fragments of real projects without node_modules: keep syntax errors, drop
-  // "cannot find module" style semantic noise.
+  // Full type checking against React / React Native / test-sandbox declarations (typeLibs/), so a
+  // wrong prop, a misspelt hook or a missing import is underlined as in a real project. Emit is
+  // CommonJS: the test runner compiles candidates' files with this same service.
   for (const defaults of [monaco.typescript.typescriptDefaults, monaco.typescript.javascriptDefaults]) {
     defaults.setDiagnosticsOptions({
-      noSemanticValidation: true,
+      noSemanticValidation: false,
       noSyntaxValidation: false,
       noSuggestionDiagnostics: true,
+      // Check the file in view (again each time it is shown, so edits to the files it imports are
+      // picked up) instead of all ~60 files of the assessment at once.
+      onlyVisible: true,
     });
+    // Every file must be in the worker for imports between files to resolve (see syncTypeScriptModels).
+    defaults.setEagerModelSync(true);
     defaults.setCompilerOptions({
-      target: monaco.typescript.ScriptTarget.ESNext,
-      module: monaco.typescript.ModuleKind.ESNext,
+      target: monaco.typescript.ScriptTarget.ES2020,
+      lib: ['es2022', 'dom', 'dom.iterable'],
+      module: monaco.typescript.ModuleKind.CommonJS,
       moduleResolution: monaco.typescript.ModuleResolutionKind.NodeJs,
       jsx: monaco.typescript.JsxEmit.ReactJSX,
       allowJs: true,
       allowNonTsExtensions: true,
       esModuleInterop: true,
-      strict: false,
+      resolveJsonModule: true,
+      strict: true,
+      noImplicitOverride: true,
+      skipLibCheck: true,
+      isolatedModules: true,
     });
   }
+  void import('./typeLibs').then(({ editorTypeLibs }) => {
+    monaco.typescript.typescriptDefaults.setExtraLibs(editorTypeLibs);
+    monaco.typescript.javascriptDefaults.setExtraLibs(editorTypeLibs);
+  });
   monaco.json.jsonDefaults.setDiagnosticsOptions({
     validate: true,
     allowComments: false,
@@ -54,6 +69,25 @@ export function setupMonaco(): typeof monaco {
   registerGroovy();
   defineThemes();
   return monaco;
+}
+
+/**
+ * Starts the TypeScript worker with every model in it (eager model sync), so imports between files
+ * resolve. Monaco otherwise sends a model only when it is checked, and a file checked before the
+ * files it imports were sent shows "Cannot find module" errors. Call after creating the models,
+ * before any file is shown. (Don't re-check by changing compiler or diagnostics options: that
+ * restarts the worker and drops requests in flight, such as a test run's compile step.)
+ */
+export async function syncTypeScriptModels(): Promise<void> {
+  const uris = (language: string) =>
+    monaco.editor
+      .getModels()
+      .filter((m) => m.getLanguageId() === language)
+      .map((m) => m.uri);
+  const ts = uris('typescript');
+  const js = uris('javascript');
+  if (ts.length) await (await monaco.typescript.getTypeScriptWorker())(...ts);
+  if (js.length) await (await monaco.typescript.getJavaScriptWorker())(...js);
 }
 
 /** Map our stored language ids onto Monaco language ids. */

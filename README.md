@@ -24,7 +24,9 @@ npm run check        # lint + format + seed check + all tests + type-check + bui
 | `npm run test:db` | Database / RLS tests only |
 | `npm run seed:build` | Regenerates `supabase/seed/seed.sql` from `supabase/seed/questions/*` and `templates/*` |
 | `npm run typecheck` | Strict TypeScript for the app and the Node tooling |
-| `npm run sql:bundle` | Writes `supabase/dist/codearena-database.sql`: installs or upgrades a Supabase project from the SQL Editor (applies only missing migrations, one transaction, safe to re-run) |
+| `npm run sql:bundle` | Writes `supabase/dist/codearena-database/*.sql`: run them **one by one, in file-name order** in Supabase Dashboard → SQL Editor to install or upgrade a project (schema first, then one file per question, then the template; each is one transaction and safe to re-run). They are separate files because the SQL Editor fails on very large scripts ("Failed to fetch") |
+| `npm run sql:copy` | Puts those scripts on the clipboard one at a time, for pasting into the SQL Editor (`-- 3` starts at script 3, `-- --list` lists them) |
+| `npm run assistant:worker` | Runs the coding assistant's worker on a laptop inside the Zycus network while assessments run (see [docs/AI_ASSISTANT_SETUP.md](docs/AI_ASSISTANT_SETUP.md)) |
 | `npm run models:fetch` | Downloads and verifies the face-detection model into `public/models/` (once; the file is committed) |
 
 ## Repository layout
@@ -37,7 +39,7 @@ src/
   features/      candidate/, workspace/ (editor, autosave, timer), proctoring/, admin/, styleguide/
 supabase/
   migrations/    schema, RLS policies, grants, audit trail, auth hook (applied in filename order)
-  seed/          sample questions (one folder each), the Lead React Native template, bootstrap SQL
+  seed/          the assessment's questions (one folder each), the Lead React Native template, seed/upgrade SQL
   tests/         PGlite-based RLS/privilege tests
 public/brand/    official Zycus assets (see BRAND_SOURCES.md)
 docs/            Phase 0 plan, IT data-flow brief
@@ -45,7 +47,10 @@ docs/            Phase 0 plan, IT data-flow brief
 
 ## Security notes for contributors
 
-- Never commit `.env*` files. Only the Supabase **anon** key may be used in the frontend.
+- Never commit `.env*` files. Only the Supabase **anon** key may be used in the frontend. The
+  LiteLLM key lives only on the machine running the assistant worker, in git-ignored `.env.local`
+  without a `VITE_` prefix.
+- A production build fails if it contains any question's rubric or reviewer notes.
 - `dangerouslySetInnerHTML`, `eval` and `new Function` are lint errors.
 - Every new database function must end its migration with explicit `revoke`/`grant` statements.
   `supabase/tests/01-schema-invariants.test.ts` fails if `anon` can execute anything unexpected.

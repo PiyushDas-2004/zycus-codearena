@@ -8,7 +8,9 @@ export function proctoringMeasures(p: ProctoringConfig): string[] {
   if (p.tabSwitch.enabled || p.windowBlur.enabled)
     m.push('Switching to another tab, window or app is detected and recorded with its duration.');
   if (p.paste.enabled)
-    m.push('Pasting is disabled everywhere, including the editor and notes. Attempts are recorded.');
+    m.push(
+      'Pasting is disabled everywhere, including the editor and the assistant box. Attempts are recorded.',
+    );
   if (p.copyProtection.enabled) m.push('Copying the questions, right-clicking and printing are disabled.');
   if (p.blockedShortcuts.enabled || p.devtoolsHeuristic.enabled)
     m.push('Developer tools and similar shortcuts are blocked and recorded.');
@@ -29,6 +31,10 @@ export function proctoringMeasures(p: ProctoringConfig): string[] {
   if (p.keystrokeReplay.enabled)
     m.push('Your edits are recorded with timing so reviewers can replay how you worked.');
   if (p.watermark.enabled) m.push('A watermark with your name and email is shown over the workspace.');
+  if (p.aiAssistant.enabled)
+    m.push(
+      `A coding assistant gives small hints (never solutions), up to ${p.aiAssistant.maxRequests} questions. What you ask and its replies are recorded for reviewers.`,
+    );
   return m;
 }
 

@@ -1,0 +1,4 @@
+// Minimal stand-in for the `csstype` package (React's types only use CSS.Properties).
+export interface Properties<TLength = (string & {}) | 0, TTime = string & {}> {
+  [property: string]: string | number | undefined;
+}

@@ -189,11 +189,17 @@ describe('consent, start and the server clock', () => {
     expect(ws.ok).toBe(true);
     const questions = ws.questions as { title: string; files: { path: string; readonly: boolean }[] }[];
     expect(questions.map((q) => q.title)).toHaveLength(4);
-    expect(questions[0]?.files.map((f) => f.path)).toContain('src/hooks/useProducts.ts');
+    expect(questions[0]?.files.map((f) => f.path)).toContain('src/hooks/useApprovals.ts');
     expect((ws.files as unknown[]).length).toBeGreaterThan(10);
     expect(ws.backup_key_b64).toMatch(/^[A-Za-z0-9+/]{43}=$/);
     const text = JSON.stringify(ws);
-    for (const forbidden of ['rubric', 'max_points', 'race_condition', 'notes_md', 'Reference solution']) {
+    for (const forbidden of [
+      'rubric',
+      'max_points',
+      'single_flight_refresh',
+      'notes_md',
+      'Reference solution',
+    ]) {
       expect(text, forbidden).not.toContain(forbidden);
     }
   });
@@ -223,18 +229,18 @@ describe('autosave and proctoring events', () => {
   it('applies newer edits and ignores stale, read-only, unknown or malformed ones', async () => {
     const res = await rpc('candidate_sync', token, {
       files: [
-        file('src/hooks/useProducts.ts', 'v5', 5),
-        file('src/api/catalogue.ts', 'tampered', 6), // read-only
+        file('src/hooks/useApprovals.ts', 'v5', 5),
+        file('src/types.ts', 'tampered', 6), // read-only
         file('src/new-file.ts', 'x', 7), // not a starter path
-        { question_id: Q_RN, path: 'App.tsx', client_seq: 8 }, // no content
-        { question_id: 'not-a-uuid', path: 'App.tsx', content: 'x', client_seq: 9 },
+        { question_id: Q_RN, path: 'src/api/httpClient.ts', client_seq: 8 }, // no content
+        { question_id: 'not-a-uuid', path: 'src/api/httpClient.ts', content: 'x', client_seq: 9 },
       ],
     });
     expect(res.ok).toBe(true);
     expect((res.accepted as { files: number }).files).toBe(1);
-    await rpc('candidate_sync', token, { files: [file('src/hooks/useProducts.ts', 'stale v3', 3)] });
-    expect(await content('src/hooks/useProducts.ts')).toBe('v5');
-    expect(await content('src/api/catalogue.ts')).toContain('Read-only');
+    await rpc('candidate_sync', token, { files: [file('src/hooks/useApprovals.ts', 'stale v3', 3)] });
+    expect(await content('src/hooks/useApprovals.ts')).toBe('v5');
+    expect(await content('src/types.ts')).toContain('export type ApprovalStatus');
   });
 
   it('saves notes and statuses with the same ordering rule', async () => {
@@ -380,7 +386,7 @@ describe('violation limit, time-up, submission and capacity', () => {
     expect(
       (
         await rpc('candidate_sync', token, {
-          files: [{ question_id: Q_RN, path: 'App.tsx', content: 'in grace', client_seq: 1 }],
+          files: [{ question_id: Q_RN, path: 'src/api/httpClient.ts', content: 'in grace', client_seq: 1 }],
         })
       ).ok,
     ).toBe(true);
@@ -390,14 +396,14 @@ describe('violation limit, time-up, submission and capacity', () => {
       [id],
     );
     const late = await rpc('candidate_sync', token, {
-      files: [{ question_id: Q_RN, path: 'App.tsx', content: 'too late', client_seq: 2 }],
+      files: [{ question_id: Q_RN, path: 'src/api/httpClient.ts', content: 'too late', client_seq: 2 }],
     });
     expect(late.error).toBe('SUBMITTED');
     const s = stateOf(late);
     expect(s.submit_reason).toBe('time_up');
     expect(s.submitted_at_ms).toBe(s.deadline_ms);
     const { rows } = await db.query<{ content: string }>(
-      `select content from public.workspace_files where session_id = $1 and path = 'App.tsx'`,
+      `select content from public.workspace_files where session_id = $1 and path = 'src/api/httpClient.ts'`,
       [id],
     );
     expect(rows[0]?.content).toBe('in grace');
@@ -433,7 +439,7 @@ describe('violation limit, time-up, submission and capacity', () => {
     expect((await rpc('candidate_start', nToken, '{}')).error).toBe('CAPACITY');
 
     const first = await rpc('candidate_submit', token, {
-      files: [{ question_id: Q_RN, path: 'App.tsx', content: 'final', client_seq: 99 }],
+      files: [{ question_id: Q_RN, path: 'src/api/httpClient.ts', content: 'final', client_seq: 99 }],
     });
     expect(stateOf(first)).toMatchObject({ status: 'submitted', submit_reason: 'candidate' });
     const again = await rpc('candidate_submit', token, {});

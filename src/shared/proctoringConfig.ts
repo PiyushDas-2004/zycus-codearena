@@ -37,6 +37,11 @@ export const ProctoringConfigSchema = z.object({
   microphone: toggle({ loudDbfs: z.number().min(-60).max(0), sustainSec: z.number().min(1).max(30) }),
   watermark: toggle({ opacity: z.number().min(0.02).max(0.3) }),
   keystrokeReplay: toggle({}),
+  /** Limited coding assistant: hints only; every question and reply is recorded for reviewers. */
+  aiAssistant: toggle({
+    maxRequests: z.number().int().min(1).max(50),
+    cooldownSec: z.number().int().min(0).max(600),
+  }),
 });
 export type ProctoringConfig = z.infer<typeof ProctoringConfigSchema>;
 

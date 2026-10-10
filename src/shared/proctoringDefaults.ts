@@ -37,6 +37,7 @@ export const defaultProctoringConfig: ProctoringConfig = {
   microphone: { enabled: false, loudDbfs: -20, sustainSec: 3 },
   watermark: { enabled: true, opacity: 0.06 },
   keystrokeReplay: { enabled: true },
+  aiAssistant: { enabled: true, maxRequests: 10, cooldownSec: 20 },
 };
 
 export const defaultViolationPolicy: ViolationPolicy = {

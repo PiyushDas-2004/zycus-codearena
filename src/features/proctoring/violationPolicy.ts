@@ -45,7 +45,7 @@ export const VIOLATION_COPY: Record<string, ViolationCopy> = {
   multi_monitor: {
     label: 'Connecting a second display',
     title: 'A second display was detected',
-    body: 'Only one display may be connected. Disconnect or mirror the extra display.',
+    body: 'Only one display may be connected. Disconnect the extra display (or press Windows key + P and choose "PC screen only").',
   },
   camera_off: {
     label: 'Turning the camera off',

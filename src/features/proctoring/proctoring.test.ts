@@ -156,7 +156,7 @@ describe('clipboard guard', () => {
     const inNotes = clip('paste', notes, 'abc');
     expect(inEditor.defaultPrevented && inNotes.defaultPrevented).toBe(true);
     expect(onBlocked).toHaveBeenCalledWith('paste_attempt', { where: 'editor', chars: 13 });
-    expect(onBlocked).toHaveBeenCalledWith('paste_attempt', { where: 'notes', chars: 3 });
+    expect(onBlocked).toHaveBeenCalledWith('paste_attempt', { where: 'text_field', chars: 3 });
     expect(JSON.stringify(onBlocked.mock.calls)).not.toContain('secret');
   });
 

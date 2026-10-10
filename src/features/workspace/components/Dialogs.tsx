@@ -19,11 +19,10 @@ export function SubmitDialog({ controller }: { controller: WorkspaceController }
 }
 
 function SubmitConfirm({ controller }: { controller: WorkspaceController }) {
-  const { questions, statuses, notes, modified, set } = useWorkspaceUi(
+  const { questions, statuses, modified, set } = useWorkspaceUi(
     useShallow((s) => ({
       questions: s.questions,
       statuses: s.statuses,
-      notes: s.notes,
       modified: s.modified,
       set: s.set,
     })),
@@ -59,7 +58,6 @@ function SubmitConfirm({ controller }: { controller: WorkspaceController }) {
             <th className="py-2 font-medium">Question</th>
             <th className="py-2 font-medium">Status</th>
             <th className="py-2 font-medium">Files changed</th>
-            <th className="py-2 font-medium">Explanation</th>
           </tr>
         </thead>
         <tbody>
@@ -85,9 +83,6 @@ function SubmitConfirm({ controller }: { controller: WorkspaceController }) {
                   </span>
                 </td>
                 <td className="tabular py-2.5 pr-3">{changed}</td>
-                <td className="py-2.5">
-                  {(notes[q.questionId] ?? '').trim() ? 'Written' : <span className="text-muted">Empty</span>}
-                </td>
               </tr>
             );
           })}

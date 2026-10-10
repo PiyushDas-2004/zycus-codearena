@@ -62,13 +62,17 @@ function Instructions({ state }: { state: SessionState }) {
 
   const start = async () => {
     if (!token) return;
+    // Only one display, confirmed (a browser that can't tell isn't trusted either).
+    const extended = hasExtendedDisplay();
     if (
       proctoring.multiMonitor.enabled &&
       proctoring.multiMonitor.blockStartIfExtended &&
-      hasExtendedDisplay() === true
+      extended !== false
     ) {
       return setError(
-        'More than one display is connected. Disconnect the extra display (or set your displays to mirror), then press Start again.',
+        extended
+          ? 'More than one display is connected. Disconnect the extra display (or press Windows key + P and choose "PC screen only"), then press Start again.'
+          : "Your browser can't confirm that only one display is connected. Use the latest Google Chrome or Microsoft Edge.",
       );
     }
     setBusy(true);

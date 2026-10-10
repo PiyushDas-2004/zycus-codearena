@@ -88,7 +88,7 @@ export function installTypingMonitor(o: TypingMonitorOptions): () => void {
       lengths.set(t, t.value.length);
       const added = t.value.length - before;
       if (added >= threshold && !o.isAppEdit()) {
-        o.onSuspiciousInsert({ where: 'notes', chars: added, via: (e as InputEvent).inputType ?? null });
+        o.onSuspiciousInsert({ where: 'text_field', chars: added, via: (e as InputEvent).inputType ?? null });
       }
     };
     window.addEventListener('focusin', onFocusIn, true);

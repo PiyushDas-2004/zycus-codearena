@@ -17,7 +17,6 @@ interface WorkspaceUiState {
   openTabs: Record<string, string[]>;
   activeFile: Record<string, string | null>;
   statuses: Record<string, ResponseStatus>;
-  notes: Record<string, string>;
   /** fileKey → differs from the starter content. */
   modified: Record<string, boolean>;
   saveStatus: SaveStatus;
@@ -30,6 +29,12 @@ interface WorkspaceUiState {
   limitReached: boolean;
   /** A proctoring condition (full screen, camera, display) must be resolved before working on. */
   paused: boolean;
+  /** Question list flyout (opened by hovering the activity bar). */
+  questionsOpen: boolean;
+  /** Coding-assistant flyout (toggled by its button). */
+  assistantOpen: boolean;
+  /** The question statement pane is collapsed to give the code more room. */
+  statementCollapsed: boolean;
   messages: StaffMessage[];
   prefs: EditorPrefs;
   set: (patch: Partial<Omit<WorkspaceUiState, 'set' | 'reset'>>) => void;
@@ -63,7 +68,6 @@ const initial = () => ({
   openTabs: {},
   activeFile: {},
   statuses: {},
-  notes: {},
   modified: {},
   saveStatus: { phase: 'idle' as const, lastServerSaveAt: null, unsyncedItems: 0, consecutiveFailures: 0 },
   deadlineMs: null,
@@ -73,6 +77,9 @@ const initial = () => ({
   timeUp: false,
   limitReached: false,
   paused: false,
+  questionsOpen: false,
+  assistantOpen: false,
+  statementCollapsed: false,
   messages: [],
   prefs: loadPrefs(),
 });

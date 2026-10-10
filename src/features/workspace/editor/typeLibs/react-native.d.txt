@@ -1,0 +1,306 @@
+// Type declarations for the editor (a subset of React Native's public API, matching the test
+// sandbox's implementation in src/features/runner/sandbox/reactNativeShim.ts).
+declare module 'react-native' {
+  import * as React from 'react';
+
+  export type StyleProp<T> = T | readonly StyleProp<T>[] | false | null | undefined;
+  export interface ViewStyle {
+    [key: string]: unknown;
+  }
+  export interface TextStyle extends ViewStyle {}
+  export interface ImageStyle extends ViewStyle {}
+  export type ColorValue = string;
+
+  export interface LayoutRectangle {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }
+  export interface LayoutChangeEvent {
+    nativeEvent: { layout: LayoutRectangle };
+  }
+  export interface GestureResponderEvent {
+    nativeEvent: Record<string, unknown>;
+  }
+  export interface NativeSyntheticEvent<T> {
+    nativeEvent: T;
+  }
+  export interface NativeScrollEvent {
+    contentOffset: { x: number; y: number };
+    contentSize: { width: number; height: number };
+    layoutMeasurement: { width: number; height: number };
+  }
+
+  export interface AccessibilityState {
+    disabled?: boolean;
+    selected?: boolean;
+    checked?: boolean | 'mixed';
+    busy?: boolean;
+    expanded?: boolean;
+  }
+  /**
+   * Props this subset doesn't list are still accepted: valid React Native code must never get a
+   * red squiggle. The props that are listed are type-checked.
+   */
+  export interface OtherProps {
+    [prop: string]: unknown;
+  }
+  export interface AccessibilityProps extends OtherProps {
+    accessible?: boolean;
+    accessibilityLabel?: string;
+    accessibilityHint?: string;
+    accessibilityRole?: string;
+    accessibilityState?: AccessibilityState;
+  }
+
+  interface ViewBaseProps extends AccessibilityProps {
+    testID?: string;
+    nativeID?: string;
+    onLayout?: (event: LayoutChangeEvent) => void;
+    pointerEvents?: 'box-none' | 'none' | 'box-only' | 'auto';
+    hitSlop?: number | { top?: number; left?: number; bottom?: number; right?: number };
+  }
+  export interface ViewProps extends ViewBaseProps {
+    style?: StyleProp<ViewStyle>;
+    children?: React.ReactNode;
+  }
+  export interface TextProps extends AccessibilityProps {
+    testID?: string;
+    style?: StyleProp<TextStyle>;
+    children?: React.ReactNode;
+    numberOfLines?: number;
+    ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
+    adjustsFontSizeToFit?: boolean;
+    selectable?: boolean;
+    onPress?: (event: GestureResponderEvent) => void;
+  }
+  export interface TextInputProps extends ViewProps {
+    value?: string;
+    defaultValue?: string;
+    placeholder?: string;
+    editable?: boolean;
+    multiline?: boolean;
+    maxLength?: number;
+    secureTextEntry?: boolean;
+    autoFocus?: boolean;
+    keyboardType?: 'default' | 'numeric' | 'decimal-pad' | 'email-address' | 'phone-pad' | 'number-pad';
+    autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+    autoCorrect?: boolean;
+    autoComplete?: string;
+    textContentType?: string;
+    inputMode?: 'none' | 'text' | 'decimal' | 'numeric' | 'tel' | 'search' | 'email' | 'url';
+    returnKeyType?: 'done' | 'go' | 'next' | 'search' | 'send';
+    clearButtonMode?: 'never' | 'while-editing' | 'unless-editing' | 'always';
+    placeholderTextColor?: ColorValue;
+    selectTextOnFocus?: boolean;
+    onChangeText?: (text: string) => void;
+    onSubmitEditing?: () => void;
+    onEndEditing?: () => void;
+    onKeyPress?: (event: NativeSyntheticEvent<{ key: string }>) => void;
+    onFocus?: () => void;
+    onBlur?: () => void;
+  }
+  export interface PressableStateCallbackType {
+    readonly pressed: boolean;
+    readonly hovered?: boolean;
+  }
+  export interface PressableProps extends ViewBaseProps {
+    onPress?: (event: GestureResponderEvent) => void;
+    onLongPress?: (event: GestureResponderEvent) => void;
+    disabled?: boolean;
+    children?: React.ReactNode | ((state: PressableStateCallbackType) => React.ReactNode);
+    style?: StyleProp<ViewStyle> | ((state: PressableStateCallbackType) => StyleProp<ViewStyle>);
+  }
+  export interface TouchableOpacityProps extends ViewProps {
+    onPress?: (event: GestureResponderEvent) => void;
+    onLongPress?: (event: GestureResponderEvent) => void;
+    disabled?: boolean;
+    activeOpacity?: number;
+  }
+  export interface ButtonProps extends OtherProps {
+    title: string;
+    onPress?: (event: GestureResponderEvent) => void;
+    disabled?: boolean;
+    color?: ColorValue;
+    testID?: string;
+    accessibilityLabel?: string;
+  }
+  export interface ScrollViewProps extends ViewProps {
+    contentContainerStyle?: StyleProp<ViewStyle>;
+    horizontal?: boolean;
+    keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
+    refreshControl?: React.ReactElement;
+    onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
+    scrollEventThrottle?: number;
+  }
+  export interface ImageProps extends AccessibilityProps {
+    source: { uri: string } | number;
+    style?: StyleProp<ImageStyle>;
+    testID?: string;
+    resizeMode?: 'cover' | 'contain' | 'stretch' | 'center';
+    defaultSource?: { uri: string } | number;
+    onLoad?: () => void;
+    onLoadEnd?: () => void;
+    onError?: (event: NativeSyntheticEvent<{ error: unknown }>) => void;
+  }
+  export interface ActivityIndicatorProps extends ViewProps {
+    animating?: boolean;
+    size?: 'small' | 'large' | number;
+    color?: ColorValue;
+  }
+  export interface SwitchProps extends ViewProps {
+    value?: boolean;
+    disabled?: boolean;
+    onValueChange?: (value: boolean) => void;
+  }
+  export interface ModalProps extends OtherProps {
+    visible?: boolean;
+    transparent?: boolean;
+    animationType?: 'none' | 'slide' | 'fade';
+    onRequestClose?: () => void;
+    children?: React.ReactNode;
+    testID?: string;
+  }
+  export interface RefreshControlProps extends ViewProps {
+    refreshing: boolean;
+    onRefresh?: () => void;
+  }
+
+  export interface ListRenderItemInfo<ItemT> {
+    item: ItemT;
+    index: number;
+    separators: { highlight: () => void; unhighlight: () => void; updateProps: (select: 'leading' | 'trailing', newProps: object) => void };
+  }
+  export type ListRenderItem<ItemT> = (info: ListRenderItemInfo<ItemT>) => React.ReactElement | null;
+  export interface FlatListProps<ItemT> extends ScrollViewProps {
+    data: ReadonlyArray<ItemT> | null | undefined;
+    renderItem: ListRenderItem<ItemT> | null | undefined;
+    keyExtractor?: (item: ItemT, index: number) => string;
+    extraData?: unknown;
+    getItemLayout?: (
+      data: ArrayLike<ItemT> | null | undefined,
+      index: number,
+    ) => { length: number; offset: number; index: number };
+    ItemSeparatorComponent?: React.ComponentType<any> | null;
+    ListEmptyComponent?: React.ComponentType<any> | React.ReactElement | null;
+    ListHeaderComponent?: React.ComponentType<any> | React.ReactElement | null;
+    ListFooterComponent?: React.ComponentType<any> | React.ReactElement | null;
+    initialNumToRender?: number;
+    initialScrollIndex?: number | null;
+    windowSize?: number;
+    maxToRenderPerBatch?: number;
+    removeClippedSubviews?: boolean;
+    inverted?: boolean | null;
+    numColumns?: number;
+    refreshing?: boolean | null;
+    onRefresh?: (() => void) | null;
+    onEndReached?: ((info: { distanceFromEnd: number }) => void) | null;
+    onEndReachedThreshold?: number | null;
+  }
+  export class FlatList<ItemT = any> extends React.Component<FlatListProps<ItemT>> {
+    scrollToIndex(params: { index: number; animated?: boolean; viewPosition?: number }): void;
+    scrollToOffset(params: { offset: number; animated?: boolean }): void;
+    scrollToEnd(params?: { animated?: boolean }): void;
+  }
+  export interface SectionListData<ItemT> {
+    key?: string;
+    title?: string;
+    data: ReadonlyArray<ItemT>;
+  }
+  export interface SectionListProps<ItemT> extends ScrollViewProps {
+    sections: ReadonlyArray<SectionListData<ItemT>>;
+    renderItem: (info: { item: ItemT; index: number; section: SectionListData<ItemT> }) => React.ReactElement | null;
+    renderSectionHeader?: (info: { section: SectionListData<ItemT> }) => React.ReactElement | null;
+    keyExtractor?: (item: ItemT, index: number) => string;
+  }
+  export class SectionList<ItemT = any> extends React.Component<SectionListProps<ItemT>> {}
+
+  export const View: React.ComponentType<ViewProps>;
+  export const Text: React.ComponentType<TextProps>;
+  export const TextInput: React.ComponentType<TextInputProps>;
+  export const Pressable: React.ComponentType<PressableProps>;
+  export const TouchableOpacity: React.ComponentType<TouchableOpacityProps>;
+  export const TouchableHighlight: React.ComponentType<TouchableOpacityProps>;
+  export const TouchableWithoutFeedback: React.ComponentType<TouchableOpacityProps>;
+  export const Button: React.ComponentType<ButtonProps>;
+  export const ScrollView: React.ComponentType<ScrollViewProps>;
+  export const SafeAreaView: React.ComponentType<ViewProps>;
+  export const KeyboardAvoidingView: React.ComponentType<ViewProps & { behavior?: 'height' | 'position' | 'padding' }>;
+  export const Image: React.ComponentType<ImageProps>;
+  export const ActivityIndicator: React.ComponentType<ActivityIndicatorProps>;
+  export const Switch: React.ComponentType<SwitchProps>;
+  export const Modal: React.ComponentType<ModalProps>;
+  export const RefreshControl: React.ComponentType<RefreshControlProps>;
+  export interface StatusBarProps extends OtherProps {
+    barStyle?: 'default' | 'light-content' | 'dark-content';
+    hidden?: boolean;
+    backgroundColor?: ColorValue;
+    translucent?: boolean;
+  }
+  export const StatusBar: React.ComponentType<StatusBarProps> & {
+    setBarStyle(style: 'default' | 'light-content' | 'dark-content', animated?: boolean): void;
+    setHidden(hidden: boolean, animation?: 'none' | 'fade' | 'slide'): void;
+    setBackgroundColor(color: ColorValue, animated?: boolean): void;
+    currentHeight?: number;
+  };
+
+  type NamedStyles<T> = { [P in keyof T]: ViewStyle | TextStyle | ImageStyle };
+  export const StyleSheet: {
+    create<T extends NamedStyles<T> | NamedStyles<any>>(styles: T & NamedStyles<any>): T;
+    flatten<T>(style?: StyleProp<T>): T;
+    compose<T>(a: StyleProp<T>, b: StyleProp<T>): StyleProp<T>;
+    hairlineWidth: number;
+    absoluteFill: ViewStyle;
+    absoluteFillObject: ViewStyle;
+  };
+
+  export const Platform: {
+    OS: 'ios' | 'android';
+    Version: number | string;
+    select<T>(specifics: { ios?: T; android?: T; native?: T; default?: T }): T | undefined;
+  };
+
+  export interface ScaledSize {
+    width: number;
+    height: number;
+    scale: number;
+    fontScale: number;
+  }
+  export interface EmitterSubscription {
+    remove(): void;
+  }
+  export type NativeEventSubscription = EmitterSubscription;
+  export const Dimensions: {
+    get(dim: 'window' | 'screen'): ScaledSize;
+    addEventListener(type: 'change', handler: (dims: { window: ScaledSize; screen: ScaledSize }) => void): EmitterSubscription;
+  };
+  export function useWindowDimensions(): ScaledSize;
+  export function useColorScheme(): 'light' | 'dark' | null | undefined;
+  export const PixelRatio: { get(): number; roundToNearestPixel(size: number): number };
+
+  export type AppStateStatus = 'active' | 'background' | 'inactive' | 'unknown' | 'extension';
+  export const AppState: {
+    currentState: AppStateStatus;
+    addEventListener(type: 'change', listener: (state: AppStateStatus) => void): NativeEventSubscription;
+  };
+
+  export const Keyboard: {
+    dismiss(): void;
+    addListener(event: string, listener: (e: unknown) => void): EmitterSubscription;
+  };
+  export const Alert: {
+    alert(
+      title: string,
+      message?: string,
+      buttons?: { text?: string; onPress?: () => void; style?: 'default' | 'cancel' | 'destructive' }[],
+    ): void;
+  };
+  export const Linking: { openURL(url: string): Promise<unknown>; canOpenURL(url: string): Promise<boolean> };
+  export const Vibration: { vibrate(pattern?: number | number[]): void; cancel(): void };
+  export const InteractionManager: {
+    runAfterInteractions(task: () => void): { cancel: () => void };
+  };
+  export const NativeModules: Record<string, unknown>;
+  export const I18nManager: { isRTL: boolean };
+}

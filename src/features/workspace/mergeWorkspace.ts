@@ -36,6 +36,12 @@ export function mergeWorkspace(
   }
   rec.responses = Object.fromEntries(Object.entries(rec.responses).filter(([q]) => serverQuestions.has(q)));
 
+  // Staff reopened the test with fresh warnings: this device's counts are from before that.
+  if (ws.state.violationsResetCount > (rec.violationsResetSeen ?? 0)) {
+    rec.violationCounts = {};
+    rec.violationsResetSeen = ws.state.violationsResetCount;
+  }
+
   rec.clientSeq = maxSeq;
   rec.nextChunkSeq = Math.max(rec.nextChunkSeq, ws.nextChunkSeq);
   if (rec.ui.currentQuestionId && !serverQuestions.has(rec.ui.currentQuestionId))

@@ -13,6 +13,7 @@
  */
 import { normalizeAccessCode } from '@/shared/accessCode';
 import { defaultProctoringConfig, defaultViolationPolicy } from '@/shared/proctoringDefaults';
+import { seededInstructionsMd, seededQuestions } from './mockQuestions';
 import type {
   ApiResult,
   CallTiming,
@@ -41,6 +42,8 @@ interface MockSession {
   durationSeconds: number;
   violationCount: number;
   violationCounts?: Record<string, number>;
+  aiUsed?: number;
+  aiLastAt?: number;
   files: Record<string, { content: string; seq: number }>;
   responses: Record<string, { status: ResponseStatus; notes: string; seq: number }>;
   eventIds: string[];
@@ -54,70 +57,8 @@ interface MockDb {
   relaxedProctoring?: boolean;
 }
 
-const questions: WorkspaceQuestion[] = [
-  {
-    questionId: '00000000-0000-4000-8000-0000000000a1',
-    position: 1,
-    title: '[MOCK] Fix the counter screen (React Native)',
-    statementMd: [
-      '> Mock question for UI development.',
-      '',
-      '## Bug report',
-      '',
-      '1. Tapping **+** sometimes increments twice.',
-      '2. The total never resets when the screen is reopened.',
-      '',
-      '```tsx',
-      'const [count, setCount] = useState(0);',
-      '```',
-      '',
-      'Explain each root cause in **Explain your fix**.',
-    ].join('\n'),
-    files: [
-      {
-        path: 'App.tsx',
-        language: 'typescript',
-        readonly: false,
-        content:
-          "import { CounterScreen } from './src/CounterScreen';\n\nexport default function App() {\n  return <CounterScreen />;\n}\n",
-      },
-      {
-        path: 'src/CounterScreen.tsx',
-        language: 'typescript',
-        readonly: false,
-        content:
-          "import React, { useEffect, useState } from 'react';\nimport { Button, Text, View } from 'react-native';\n\nexport function CounterScreen() {\n  const [count, setCount] = useState(0);\n\n  useEffect(() => {\n    const id = setInterval(() => setCount(count + 1), 1000);\n  }, []);\n\n  return (\n    <View>\n      <Text>{count}</Text>\n      <Button title=\"+\" onPress={() => setCount(count + 1)} />\n    </View>\n  );\n}\n",
-      },
-      {
-        path: 'package.json',
-        language: 'json',
-        readonly: true,
-        content: '{\n  "name": "counter",\n  "private": true\n}\n',
-      },
-    ],
-  },
-  {
-    questionId: '00000000-0000-4000-8000-0000000000a2',
-    position: 2,
-    title: '[MOCK] Fix the greeting endpoint (Spring Boot)',
-    statementMd: '> Mock question.\n\n`GET /hello/{name}` returns 500. Find out why.',
-    files: [
-      {
-        path: 'src/main/java/com/zycus/demo/HelloController.java',
-        language: 'java',
-        readonly: false,
-        content:
-          'package com.zycus.demo;\n\nimport org.springframework.web.bind.annotation.*;\n\n@RestController\npublic class HelloController {\n\n    @GetMapping("/hello/{name}")\n    public String hello(@PathVariable String username) {\n        return "Hello " + username;\n    }\n}\n',
-      },
-      {
-        path: 'src/main/resources/application.properties',
-        language: 'properties',
-        readonly: false,
-        content: 'server.port=8080\nspring.application.name=demo\n',
-      },
-    ],
-  },
-];
+/** The real seeded assessment, so the mock shows what candidates get (read on first use). */
+const questions = (): WorkspaceQuestion[] => seededQuestions();
 
 const key = (q: string, p: string) => `${q}\u0000${p}`;
 const randomToken = () =>
@@ -217,14 +158,15 @@ export function createMockCandidateApi(): CandidateApi {
       consentAccepted: s.consentAccepted,
       violationCount: s.violationCount,
       violationCounts: { ...(s.violationCounts ?? {}) },
+      violationsResetCount: 0,
+      aiUsed: s.aiUsed ?? 0,
       candidate: { fullName: 'Demo Candidate', email: s.email },
       template: {
         name: 'Lead React Native Developer – Hands-On (mock)',
         targetRole: 'Lead React Native Developer',
         durationMinutes: Math.round(s.durationSeconds / 60),
-        instructionsMd:
-          '## About this assessment\n\nThis is the **mock backend**. Rules and timing behave like the real platform.',
-        questionCount: questions.length,
+        instructionsMd: `> **Mock backend.** Rules and timing behave like the real platform.\n\n${seededInstructionsMd()}`,
+        questionCount: questions().length,
       },
       proctoring: strict
         ? defaultProctoringConfig
@@ -263,7 +205,7 @@ export function createMockCandidateApi(): CandidateApi {
     for (const f of p.files ?? []) {
       const k = key(f.question_id, f.path);
       const cur = s.files[k];
-      const starter = questions
+      const starter = questions()
         .find((q) => q.questionId === f.question_id)
         ?.files.find((x) => x.path === f.path);
       if (cur && starter && !starter.readonly && f.client_seq > cur.seq) {
@@ -385,7 +327,7 @@ export function createMockCandidateApi(): CandidateApi {
           s.status = 'in_progress';
           s.startedAtMs = now;
           s.deadlineMs = now + s.durationSeconds * 1000;
-          for (const q of questions) {
+          for (const q of questions()) {
             s.responses[q.questionId] = { status: 'not_started', notes: '', seq: 0 };
             for (const file of q.files)
               s.files[key(q.questionId, file.path)] = { content: file.content, seq: 0 };
@@ -412,7 +354,7 @@ export function createMockCandidateApi(): CandidateApi {
           workspace: {
             state: stateOf(s, now),
             backupKeyB64: s.backupKeyB64,
-            questions: questions.map((q) => ({ ...q, files: q.files.map((x: StarterFile) => ({ ...x })) })),
+            questions: questions().map((q) => ({ ...q, files: q.files.map((x: StarterFile) => ({ ...x })) })),
             files: Object.entries(s.files).map(([k, v]) => {
               const [questionId = '', path = ''] = k.split('\u0000');
               return { questionId, path, content: v.content, clientSeq: v.seq };
@@ -462,6 +404,31 @@ export function createMockCandidateApi(): CandidateApi {
           }
         }
         return { ok: true, state: stateOf(s, now) } as ApiResult<{ state: SessionState }>;
+      }),
+
+    askAssistant: (token, r) =>
+      respond((db, now) => {
+        const f = find(db, token);
+        if ('error' in f) return { ok: false, error: f.error };
+        const s = f.s;
+        finalizeIfOverdue(s, now);
+        if (s.status !== 'in_progress') return { ok: false, error: 'SUBMITTED' };
+        const cfg = defaultProctoringConfig.aiAssistant;
+        const used = s.aiUsed ?? 0;
+        if (!r.message.trim() || r.message.length > 600) return { ok: false, error: 'INVALID_PAYLOAD' };
+        if (used >= cfg.maxRequests) return { ok: false, error: 'ASSISTANT_LIMIT' };
+        const wait = Math.ceil(((s.aiLastAt ?? 0) + cfg.cooldownSec * 1000 - now) / 1000);
+        if (wait > 0) return { ok: false, error: 'ASSISTANT_COOLDOWN', retryAfterSeconds: wait };
+        s.aiUsed = used + 1;
+        s.aiLastAt = now;
+        return {
+          ok: true,
+          reply:
+            '(Mock assistant) Think about **when** this code runs and what it closes over. ' +
+            'Which values does the callback see the second time it runs?',
+          remaining: cfg.maxRequests - s.aiUsed,
+          cooldownSeconds: cfg.cooldownSec,
+        } as ApiResult<{ reply: string; remaining: number; cooldownSeconds: number }>;
       }),
 
     uploadSnapshot: (token, snap) =>

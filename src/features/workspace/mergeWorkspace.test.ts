@@ -3,9 +3,14 @@ import type { Workspace } from '@/lib/api/types';
 import { emptyRecord, fileKey } from '@/lib/persist/localRecord';
 import { mergeWorkspace } from './mergeWorkspace';
 
-const ws = (files: Workspace['files'], responses: Workspace['responses'] = [], nextChunkSeq = 0): Workspace =>
+const ws = (
+  files: Workspace['files'],
+  responses: Workspace['responses'] = [],
+  nextChunkSeq = 0,
+  violationsResetCount = 0,
+): Workspace =>
   ({
-    state: { sessionId: 's1' },
+    state: { sessionId: 's1', violationsResetCount },
     backupKeyB64: 'KEY',
     questions: [{ questionId: 'q1', position: 1, title: 'Q1', statementMd: '', files: [] }],
     files,
@@ -74,5 +79,24 @@ describe('mergeWorkspace', () => {
     );
     expect(resumed).toBe(false);
     expect(record.files[fileKey('q1', 'a.ts')]?.content).toBe('S');
+  });
+
+  it('forgets the warnings counted on this device when staff reopened the test with fresh ones', () => {
+    const local = emptyRecord('s1');
+    local.violationCounts = { fullscreen_exit: 4, tab_switch: 1 };
+    const { record } = mergeWorkspace(local, ws([], [], 0, 1));
+    expect(record.violationCounts).toEqual({});
+    expect(record.violationsResetSeen).toBe(1);
+
+    // Warnings after the reset are kept on the next load (same reset), until a later reset.
+    record.violationCounts = { fullscreen_exit: 1 };
+    expect(mergeWorkspace(record, ws([], [], 0, 1)).record.violationCounts).toEqual({ fullscreen_exit: 1 });
+    expect(mergeWorkspace(record, ws([], [], 0, 2)).record.violationCounts).toEqual({});
+  });
+
+  it('keeps the warnings when the test was never reset', () => {
+    const local = emptyRecord('s1');
+    local.violationCounts = { tab_switch: 2 };
+    expect(mergeWorkspace(local, ws([])).record.violationCounts).toEqual({ tab_switch: 2 });
   });
 });

@@ -4,7 +4,7 @@
   "slug": "lead-react-native-hands-on",
   "name": "Lead React Native Developer – Hands-On",
   "target_role": "Lead React Native Developer",
-  "description": "Four debugging tasks across a React Native app and a Spring Boot service. Questions 3 and 4 are placeholders until Zycus adds the final tasks.",
+  "description": "Four hard debugging tasks: two React Native apps (concurrency, lifecycles, rendering), a Spring Boot service (transactions, idempotency, locking) and a React web screen (hooks, state, input handling).",
   "duration_minutes": 150,
   "instructions_md": "@file:lead-react-native-hands-on.instructions.md",
   "proctoring": {
@@ -25,7 +25,8 @@
     "faceDetection": { "enabled": true, "intervalMs": 2000, "noFaceSeconds": 10, "multiFaceConsecutive": 2 },
     "microphone": { "enabled": false, "loudDbfs": -20, "sustainSec": 3 },
     "watermark": { "enabled": true, "opacity": 0.06 },
-    "keystrokeReplay": { "enabled": true }
+    "keystrokeReplay": { "enabled": true },
+    "aiAssistant": { "enabled": true, "maxRequests": 10, "cooldownSec": 20 }
   },
   "violation_policy": {
     "warnOnOccurrences": 2,
@@ -41,10 +42,10 @@
     }
   },
   "question_slugs": [
-    "rn-catalogue-debugging",
-    "spring-orders-debugging",
-    "placeholder-question-3",
-    "placeholder-question-4"
+    "rn-approvals-inbox",
+    "rn-live-auction",
+    "spring-po-approvals",
+    "web-invoice-builder"
   ],
   "is_active": true
 }

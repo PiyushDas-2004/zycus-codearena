@@ -1,20 +1,26 @@
 /**
- * Writes supabase/dist/codearena-database.sql: installs CodeArena on an empty Supabase project or
- * upgrades an existing one (only migrations not yet applied run), in ONE transaction, for pasting
- * into Supabase Dashboard → SQL Editor. If any statement fails, nothing is applied and the script
- * can simply be run again after fixing the cause.
+ * Writes supabase/dist/codearena-database/*.sql: the scripts that install CodeArena on an empty
+ * Supabase project or upgrade an existing one, for pasting into Dashboard → SQL Editor ONE BY ONE,
+ * in file-name order (01-schema-1.sql first). Each script is one transaction and safe to run again.
+ * They are separate because the SQL Editor fails on very large scripts ("Failed to fetch").
  *
  *   npm run sql:bundle
  */
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { buildDatabaseScript } from './lib/bundle.ts';
+import { buildDatabaseParts } from './lib/bundle.ts';
 
 const ROOT = join(import.meta.dirname, '..');
-const OUT_DIR = join(ROOT, 'supabase', 'dist');
-const OUT = join(OUT_DIR, 'codearena-database.sql');
+const OUT_DIR = join(ROOT, 'supabase', 'dist', 'codearena-database');
 
+// Earlier single-file versions, replaced by this folder.
+for (const old of ['codearena-setup.sql', 'codearena-database.sql']) {
+  rmSync(join(ROOT, 'supabase', 'dist', old), { force: true });
+}
+rmSync(OUT_DIR, { recursive: true, force: true });
 mkdirSync(OUT_DIR, { recursive: true });
-rmSync(join(OUT_DIR, 'codearena-setup.sql'), { force: true }); // replaced by codearena-database.sql
-writeFileSync(OUT, buildDatabaseScript(), 'utf8');
-console.log(`✔ Wrote ${relative(ROOT, OUT)}`);
+for (const part of buildDatabaseParts()) {
+  writeFileSync(join(OUT_DIR, part.file), part.sql, 'utf8');
+  console.log(`✔ ${relative(ROOT, join(OUT_DIR, part.file))} (${Math.round(part.sql.length / 1024)} KB)`);
+}
+console.log('Run them in this order in Dashboard → SQL Editor (one New query each).');

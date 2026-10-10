@@ -186,8 +186,8 @@ export default function StyleGuideRoute() {
             <TextField label="Email address" placeholder="name@example.com" hint="Use your work email." />
             <TextField label="Access code" defaultValue="7KQ2" error="Access codes have 12 characters." />
             <TextArea
-              label="Explain your fix"
-              placeholder="Root cause, what you changed and why"
+              label="Reviewer comment"
+              placeholder="What the candidate got right, and what they missed"
               containerClassName="md:col-span-2"
             />
             <Checkbox

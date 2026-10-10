@@ -45,6 +45,16 @@ export default tseslint.config(
   },
   { files: ['src/shared/zod.ts'], rules: { 'no-restricted-imports': 'off' } },
   {
+    // The test sandbox runs candidates' tests in a worker and mirrors Jest's own patterns.
+    files: ['src/features/runner/sandbox/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/no-this-alias': 'off',
+      '@typescript-eslint/no-invalid-void-type': 'off',
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['src/features/admin/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [

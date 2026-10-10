@@ -26,7 +26,9 @@ export function mapState(raw: unknown): SessionState {
     submitReason: (s.submit_reason as SessionState['submitReason']) ?? null,
     consentAccepted: s.consent_accepted === true,
     violationCount: num(s.violation_count),
+    aiUsed: num(s.ai_used),
     violationCounts: Object.fromEntries(Object.entries(obj(s.violation_counts)).map(([k, v]) => [k, num(v)])),
+    violationsResetCount: num(s.violations_reset_count),
     candidate: { fullName: str(c.full_name), email: str(c.email) },
     template: {
       name: str(t.name),

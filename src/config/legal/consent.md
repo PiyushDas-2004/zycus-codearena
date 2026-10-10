@@ -7,12 +7,13 @@
 **What we collect:**
 
 1. **Identity and contact:** your name and email address, which our Talent Acquisition team provided when inviting you.
-2. **Your work:** the code you write, your "Explain your fix" notes, and a timed record of your edits (keystroke timing and changes) so reviewers can replay how you solved each task.
-3. **Webcam snapshots:** low-resolution still images taken about every {{snapshotMinutes}} minutes and when a rule appears to be broken. **No video or audio is recorded or streamed.**
-4. **Face presence:** your browser checks on your own device whether zero, one or more faces are visible. Only that count is sent. **We never identify you from your face or compare it with any database.**
-5. **Test-integrity events:** for example switching tabs or windows, leaving full screen, attempted pasting, extra displays, and when your camera stops. Each is recorded with the time and duration.
-6. **Device information:** browser, operating system, screen size and display set-up.
-7. **Network information:** your IP address, stored only as a one-way hash, used to prevent misuse of access codes and deleted after 24 hours.
+2. **Your work:** the code you write, the results when you run the tests, and a timed record of your edits (keystroke timing and changes) so reviewers can replay how you solved each task.
+3. **Coding assistant:** if you use it, your questions, any code you choose to include, and its answers. They are processed by the AI service Zycus provides for this assessment and are shown to reviewers.
+4. **Webcam snapshots:** low-resolution still images taken about every {{snapshotMinutes}} minutes and when a rule appears to be broken. **No video or audio is recorded or streamed.**
+5. **Face presence:** your browser checks on your own device whether zero, one or more faces are visible. Only that count is sent. **We never identify you from your face or compare it with any database.**
+6. **Test-integrity events:** for example switching tabs or windows, leaving full screen, attempted pasting, extra displays, and when your camera stops. Each is recorded with the time and duration.
+7. **Device information:** browser, operating system, screen size and display set-up.
+8. **Network information:** your IP address, stored only as a one-way hash, used to prevent misuse of access codes and deleted after 24 hours.
 
 **Where it is stored and who sees it.** Your data is stored with our service provider Supabase in **Mumbai, India**. Only authorised Zycus hiring staff (Talent Acquisition and the interview panel assigned to you) can access it. We do not sell it or use it for any other purpose.
 

@@ -1,0 +1,200 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "f1eb4c67-f593-4b9b-9087-4e6bdd1eed13",
+  "slug": "web-invoice-builder",
+  "title": "Supplier Invoice Builder: autosave, identity and input state (React web)",
+  "category": "Front-end debugging",
+  "role_tags": [
+    "lead-react-native-developer",
+    "react-developer",
+    "front-end-developer"
+  ],
+  "skill_tags": [
+    "react",
+    "typescript",
+    "hooks",
+    "closures",
+    "debounce",
+    "state-management",
+    "forms",
+    "intl"
+  ],
+  "difficulty": "hard",
+  "time_suggestion_minutes": 30,
+  "is_sample": false,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    {
+      "path": "src/InvoiceBuilder.tsx",
+      "language": "typescript",
+      "content": "@file:files/src/InvoiceBuilder.tsx"
+    },
+    {
+      "path": "src/components/PoPicker.tsx",
+      "language": "typescript",
+      "content": "@file:files/src/components/PoPicker.tsx"
+    },
+    {
+      "path": "src/components/LineRow.tsx",
+      "language": "typescript",
+      "content": "@file:files/src/components/LineRow.tsx"
+    },
+    {
+      "path": "src/components/MoneyInput.tsx",
+      "language": "typescript",
+      "content": "@file:files/src/components/MoneyInput.tsx"
+    },
+    {
+      "path": "src/hooks/useDebouncedCallback.ts",
+      "language": "typescript",
+      "content": "@file:files/src/hooks/useDebouncedCallback.ts"
+    },
+    {
+      "path": "src/state/invoiceReducer.ts",
+      "language": "typescript",
+      "content": "@file:files/src/state/invoiceReducer.ts"
+    },
+    {
+      "path": "src/utils/money.ts",
+      "language": "typescript",
+      "content": "@file:files/src/utils/money.ts"
+    },
+    {
+      "path": "src/utils/dates.ts",
+      "language": "typescript",
+      "content": "@file:files/src/utils/dates.ts"
+    },
+    {
+      "path": "src/utils/debounce.ts",
+      "language": "typescript",
+      "content": "@file:files/src/utils/debounce.ts",
+      "readonly": true
+    },
+    {
+      "path": "src/types.ts",
+      "language": "typescript",
+      "content": "@file:files/src/types.ts",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/autosave.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/autosave.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/PoPicker.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/PoPicker.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/lines.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/lines.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/MoneyInput.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/MoneyInput.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/dates.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/dates.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/support/fakeApi.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/support/fakeApi.tsx",
+      "readonly": true
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "content": "@file:files/package.json",
+      "readonly": true
+    }
+  ],
+  "rubric": [
+    {
+      "key": "autosave",
+      "criterion": "Autosave saves the latest draft, and never after submit or close",
+      "description": "Latest callback through a ref updated in an effect (not memo deps, not render-time assignment); timer cleared on unmount; pending autosave cancelled (or flushed) on submit.",
+      "max_points": 6
+    },
+    {
+      "key": "debounce",
+      "criterion": "Search is debounced once",
+      "description": "Explains that useMemo with an unstable dependency rebuilt the debounce every render; one debounced function per component, cleaned up on unmount.",
+      "max_points": 3
+    },
+    {
+      "key": "identity",
+      "criterion": "Lines have unique ids",
+      "description": "Replaces Date.now() ids with a counter / randomUUID; explains the duplicate keys and the by-id updates hitting several lines; no index keys.",
+      "max_points": 3
+    },
+    {
+      "key": "immutability",
+      "criterion": "State updates are immutable",
+      "description": "updateLine returns a new array and object; explains reference equality in useMemo/useEffect deps and why Undo broke.",
+      "max_points": 4
+    },
+    {
+      "key": "money_input",
+      "criterion": "Price field and parsing are correct",
+      "description": "Local text state while typing, parent updated only with valid amounts; parseRupees validates the whole string, strips ₹/commas, no float * 100.",
+      "max_points": 4
+    },
+    {
+      "key": "timezone",
+      "criterion": "Invoice date is the date in India",
+      "description": "Intl.DateTimeFormat with timeZone Asia/Kolkata instead of the UTC date from toISOString.",
+      "max_points": 2
+    },
+    {
+      "key": "code_quality",
+      "criterion": "Root-cause fixes, clean code",
+      "description": "No test special-casing, no eslint-disable to hide real dependency problems, readable explanations.",
+      "max_points": 2
+    }
+  ],
+  "reference_solution": {
+    "notes_md": "@file:solution/notes.md",
+    "files": [
+      {
+        "path": "src/InvoiceBuilder.tsx",
+        "content": "@file:solution/files/src/InvoiceBuilder.tsx"
+      },
+      {
+        "path": "src/components/MoneyInput.tsx",
+        "content": "@file:solution/files/src/components/MoneyInput.tsx"
+      },
+      {
+        "path": "src/components/PoPicker.tsx",
+        "content": "@file:solution/files/src/components/PoPicker.tsx"
+      },
+      {
+        "path": "src/hooks/useDebouncedCallback.ts",
+        "content": "@file:solution/files/src/hooks/useDebouncedCallback.ts"
+      },
+      {
+        "path": "src/state/invoiceReducer.ts",
+        "content": "@file:solution/files/src/state/invoiceReducer.ts"
+      },
+      {
+        "path": "src/utils/dates.ts",
+        "content": "@file:solution/files/src/utils/dates.ts"
+      },
+      {
+        "path": "src/utils/money.ts",
+        "content": "@file:solution/files/src/utils/money.ts"
+      }
+    ]
+  }
+}

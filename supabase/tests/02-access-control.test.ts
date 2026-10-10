@@ -196,7 +196,7 @@ describe('reviews', () => {
     });
     await asUser(db, a, () =>
       db.query(
-        `insert into public.review_scores (review_id, question_id, rubric_key, score) values ($1, $2, 'search_refetch', 4)`,
+        `insert into public.review_scores (review_id, question_id, rubric_key, score) values ($1, $2, 'single_flight_refresh', 4)`,
         [reviewId, Q_RN],
       ),
     );
@@ -204,7 +204,7 @@ describe('reviews', () => {
       await expectError(
         asUser(db, a, () =>
           db.query(
-            `insert into public.review_scores (review_id, question_id, rubric_key, score) values ($1, $2, 'race_condition', 6)`,
+            `insert into public.review_scores (review_id, question_id, rubric_key, score) values ($1, $2, 'abort_per_request', 6)`,
             [reviewId, Q_RN],
           ),
         ),
