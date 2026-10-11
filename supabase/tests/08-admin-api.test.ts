@@ -441,6 +441,14 @@ describe('reopening a submitted test', () => {
     expect((await state(second.token as string)).violation_counts).toEqual({ session_takeover: 1 });
   });
 
+  it('counts a new sign-in after the candidate came back in the same tab', async () => {
+    const c = await autoSubmitted();
+    await call(rec, 'admin_reopen_session', c.sessionId, 0, true, 'Retry');
+    await state(c.token); // the old tab picks the test up again, no sign-in needed
+    const elsewhere = await call('anon', 'candidate_login', c.email, c.code, '{}');
+    expect((await state(elsewhere.token as string)).violation_counts).toEqual({ session_takeover: 1 });
+  });
+
   it('can keep the earlier warnings', async () => {
     const c = await autoSubmitted();
     // With the count kept, the next full-screen exit submits again at once.

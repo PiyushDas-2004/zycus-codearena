@@ -88,6 +88,11 @@ export const QuestionSchema = z.object({
   statement_md: z.string().max(100_000),
   is_sample: z.boolean().default(false),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
+  /**
+   * Raise it when the question changes: re-running the seed then updates an installed copy (tests
+   * already started keep the copy they began with).
+   */
+  version: z.number().int().min(1).max(10_000).default(1),
   files: z
     .array(QuestionFileSchema)
     .min(1)

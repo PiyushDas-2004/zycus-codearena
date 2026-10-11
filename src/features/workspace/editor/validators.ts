@@ -6,7 +6,7 @@
  * Errors appear as red squiggles and in the editor's problem markers, like TypeScript's.
  */
 import type * as Monaco from 'monaco-editor';
-import { javaError } from '@/shared/javaModel';
+import { parseJava } from '@/features/runner/javaParser';
 
 const OWNER = 'codearena-syntax';
 const DEBOUNCE_MS = 400;
@@ -17,18 +17,10 @@ export interface SyntaxError {
   message: string;
 }
 
-let javaParser: Promise<typeof import('java-parser')> | null = null;
-
+/** In a Web Worker with a time limit: some valid Java takes java-parser very long. */
 export async function checkJava(source: string): Promise<SyntaxError[]> {
-  javaParser ??= import('java-parser');
-  const { parse } = await javaParser;
-  try {
-    parse(source);
-    return [];
-  } catch (err) {
-    const e = javaError(err instanceof Error ? err.message : String(err));
-    return [e ?? { line: 1, column: 1, message: 'Syntax error' }];
-  }
+  const res = await parseJava(source);
+  return res.ok ? [] : [res.error];
 }
 
 export function checkXml(source: string): SyntaxError[] {
@@ -58,12 +50,31 @@ export function attachSyntaxValidation(
   kind: 'java' | 'xml',
 ): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let version = 0;
+  let running = false;
+  let again = false;
+  let disposed = false;
+  // One check at a time: edits made meanwhile are checked once it ends (a slow Java file doesn't
+  // queue a check per keystroke).
   const run = async () => {
-    const v = ++version;
+    if (disposed || model.isDisposed()) return;
+    if (running) {
+      again = true;
+      return;
+    }
+    running = true;
     const source = model.getValue();
-    const errors = kind === 'java' ? await checkJava(source) : checkXml(source);
-    if (v !== version || model.isDisposed()) return;
+    let errors: SyntaxError[];
+    try {
+      errors = kind === 'java' ? await checkJava(source) : checkXml(source);
+    } finally {
+      running = false;
+    }
+    if (again) {
+      again = false;
+      void run();
+      return;
+    }
+    if (disposed || model.isDisposed()) return;
     monaco.editor.setModelMarkers(
       model,
       OWNER,
@@ -87,6 +98,7 @@ export function attachSyntaxValidation(
     timer = setTimeout(() => void run(), DEBOUNCE_MS);
   });
   return () => {
+    disposed = true;
     clearTimeout(timer);
     sub.dispose();
   };

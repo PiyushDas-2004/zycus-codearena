@@ -5,15 +5,24 @@ const match = body(method(matcher, 'match'));
 
 describe('invoice matching', () => {
   it('amounts are compared by value, whatever their scale (1500.0 = 1500.00)', () => {
+    const amount = '[\\w.]*(getTotal|getUnitPrice|amount|unitPrice)\\(\\)';
+    // BigDecimal.equals compares the scale too: a.equals(b), b.equals(a), Objects.equals(a, b).
     const scaleSensitive =
-      /(getTotal|getUnitPrice|amount|unitPrice)\(\)\s*\.equals\(/.test(match) ||
-      /\.equals\(\s*[\w.]*(getTotal|getUnitPrice|amount|unitPrice)\(\)\s*\)/.test(match);
-    check(!scaleSensitive && /compareTo\s*\(/.test(match), 'Looked at InvoiceMatcher.match().');
+      new RegExp(`${amount}\\s*\\.equals\\(`).test(match) ||
+      new RegExp(`\\.equals\\(\\s*${amount}\\s*\\)`).test(match) ||
+      new RegExp(`Objects\\.equals\\(\\s*(${amount}|[^,;]*,\\s*${amount})`).test(match);
+    const byValue =
+      /compareTo\s*\(/.test(match) ||
+      /stripTrailingZeros\(\)\s*\.equals\([^;]*stripTrailingZeros\(\)/.test(match) ||
+      /\.subtract\([^;]*\)\s*\.signum\(\)/.test(match);
+    check(!scaleSensitive && byValue, 'Looked at InvoiceMatcher.match().');
   });
 
   it('quantities of a SKU split over several invoice lines are added up', () => {
     check(
-      /\.merge\(|groupingBy|summingInt|summingLong|getOrDefault\(|\.sum\(\)|\+=/.test(match),
+      /\.merge\(|\.compute(IfPresent)?\(|groupingBy|summingInt|summingLong|getOrDefault\(|\.sum\(\)|\+=|\.reduce\(|toMap\([^;]*(::sum|::addExact|->\s*\w+\s*\+\s*\w+)/.test(
+        match,
+      ),
       'Looked at how InvoiceMatcher.match() checks invoiced quantities.',
     );
   });

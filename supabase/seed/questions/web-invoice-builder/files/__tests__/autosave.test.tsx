@@ -36,6 +36,7 @@ describe('autosave', () => {
 
     fireEvent.submit(screen.getByTestId('invoice'));
     await flushPromises();
+    expect(api.submitted).toHaveLength(1); // sent at once: the supplier is waiting for it
     act(() => jest.advanceTimersByTime(5_000));
 
     expect(api.submitted).toHaveLength(1);

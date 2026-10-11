@@ -124,16 +124,18 @@ export function javaFileModel(cst: CstNode, source: string): JavaFile {
       : stripJavaComments(source.slice(start, end + 1)).trim();
   };
   const compact = (s: string) => s.replace(/\s+/g, ' ').trim();
+  /** A token's text from the source (the parser saw placeholders for some letters: forJavaParser). */
+  const image = (t: IToken | undefined) => (t ? source.slice(t.startOffset, t.endOffset + 1) : '');
 
   const annotations = (mods: CstNode[]): JavaAnnotation[] =>
     mods
       .flatMap((m) => kids(m, 'annotation'))
       .map((a) => {
         const ids = tokens(kid(a, 'typeName'), 'Identifier');
-        return { name: ids.at(-1)?.image ?? '', text: compact(slice(a)) };
+        return { name: image(ids.at(-1)), text: compact(slice(a)) };
       });
   const modifiers = (mods: CstNode[]): string[] =>
-    mods.filter((m) => !kid(m, 'annotation')).flatMap((m) => leafTokens(m).map((t) => t.image));
+    mods.filter((m) => !kid(m, 'annotation')).flatMap((m) => leafTokens(m).map(image));
   const typeList = (n: CstNode | undefined): string[] =>
     n ? [...kids(n, 'interfaceType'), ...kids(n, 'classType')].map((t) => compact(slice(t))) : [];
 
@@ -143,9 +145,8 @@ export function javaFileModel(cst: CstNode, source: string): JavaFile {
       return {
         type: compact(slice(kid(reg, 'unannType'))),
         name:
-          tokens(kid(reg, 'variableDeclaratorId'), 'Identifier')[0]?.image ??
-          tokens(reg, 'Identifier')[0]?.image ??
-          '',
+          image(tokens(kid(reg, 'variableDeclaratorId'), 'Identifier')[0]) ||
+          image(tokens(reg, 'Identifier')[0]),
       };
     });
 
@@ -156,7 +157,7 @@ export function javaFileModel(cst: CstNode, source: string): JavaFile {
     const result = kid(header, 'result');
     const block = kid(kid(n, 'methodBody'), 'block');
     return {
-      name: tokens(declarator, 'Identifier')[0]?.image ?? '',
+      name: image(tokens(declarator, 'Identifier')[0]),
       returnType: compact(slice(result)),
       params: params(declarator),
       annotations: annotations(mods),
@@ -174,7 +175,7 @@ export function javaFileModel(cst: CstNode, source: string): JavaFile {
     const declarator = kid(n, 'constructorDeclarator');
     const mods = kids(n, 'constructorModifier');
     return {
-      name: tokens(kid(kid(declarator, 'simpleTypeName'), 'typeIdentifier'), 'Identifier')[0]?.image ?? '',
+      name: image(tokens(kid(kid(declarator, 'simpleTypeName'), 'typeIdentifier'), 'Identifier')[0]),
       returnType: '',
       params: params(declarator),
       annotations: annotations(mods),
@@ -189,7 +190,7 @@ export function javaFileModel(cst: CstNode, source: string): JavaFile {
   function field(n: CstNode, modsKey: string): JavaField[] {
     const mods = kids(n, modsKey);
     return kids(kid(n, 'variableDeclaratorList'), 'variableDeclarator').map((d) => ({
-      name: tokens(kid(d, 'variableDeclaratorId'), 'Identifier')[0]?.image ?? '',
+      name: image(tokens(kid(d, 'variableDeclaratorId'), 'Identifier')[0]),
       type: compact(slice(kid(n, 'unannType'))),
       annotations: annotations(mods),
       modifiers: modifiers(mods),
@@ -228,7 +229,7 @@ export function javaFileModel(cst: CstNode, source: string): JavaFile {
     types: [],
     text: slice(node),
   });
-  const ident = (n: CstNode | undefined) => tokens(kid(n, 'typeIdentifier'), 'Identifier')[0]?.image ?? '';
+  const ident = (n: CstNode | undefined) => image(tokens(kid(n, 'typeIdentifier'), 'Identifier')[0]);
 
   function classDecl(n: CstNode): JavaType {
     const mods = kids(n, 'classModifier');
@@ -240,7 +241,7 @@ export function javaFileModel(cst: CstNode, source: string): JavaFile {
       t.implements = typeList(kid(kid(record, 'classImplements'), 'interfaceTypeList'));
       for (const c of kids(kid(kid(record, 'recordHeader'), 'recordComponentList'), 'recordComponent')) {
         t.fields.push({
-          name: tokens(c, 'Identifier')[0]?.image ?? '',
+          name: image(tokens(c, 'Identifier')[0]),
           type: compact(slice(kid(c, 'unannType'))),
           annotations: [],
           modifiers: ['private', 'final'],
@@ -288,9 +289,7 @@ export function javaFileModel(cst: CstNode, source: string): JavaFile {
   const unit = kid(cst, 'ordinaryCompilationUnit');
   const pkg = kid(unit, 'packageDeclaration');
   return {
-    package: tokens(pkg, 'Identifier')
-      .map((t) => t.image)
-      .join('.'),
+    package: tokens(pkg, 'Identifier').map(image).join('.'),
     imports: kids(unit, 'importDeclaration').map((d) => compact(slice(d)).replace(/^import\s+|;$/g, '')),
     types: kids(unit, 'typeDeclaration').flatMap((d) => {
       const c = kid(d, 'classDeclaration');
@@ -323,13 +322,41 @@ export function javaError(message: string): JavaSyntaxError | null {
   return { line: Number(pos[1]), column: Number(pos[2]), message: text };
 }
 
+/**
+ * java-parser's lexer lacks some characters Java allows in identifiers: spacing combining marks
+ * (Devanagari, Tamil, Bengali... vowel signs) and non-ASCII digits. The parser gets a plain letter of
+ * the same length in their place; the model is still sliced from the original text (same offsets).
+ */
+export const forJavaParser = (source: string) =>
+  source.replace(/(?![0-9])[\p{Mc}\p{Nd}]/gu, (ch) => 'a'.repeat(ch.length));
+
+/** How long a small Java file may take to parse (a normal file takes well under a second). */
+export const JAVA_PARSE_LIMIT_MS = 10_000;
+
+/**
+ * How long this file may take to parse: more for very large files (about 1 s per 500 KB normally),
+ * so a slow or busy computer doesn't cut them off.
+ */
+export const javaParseLimitMs = (source: string) => JAVA_PARSE_LIMIT_MS + Math.ceil(source.length / 20);
+
+/**
+ * The error for a file whose parse was stopped: java-parser backtracks on deeply nested casts and
+ * parentheses (10 levels take seconds, 16 take minutes), so it runs in a worker with a time limit.
+ */
+export const JAVA_TOO_SLOW: JavaSyntaxError = {
+  line: 1,
+  column: 1,
+  message:
+    'This file takes too long to check. Simplify very deeply nested parentheses or casts (split them into variables).',
+};
+
 /** Parses a Java file into its model, or reports its first syntax error. */
 export function modelJava(
   parse: (source: string) => CstNode,
   source: string,
 ): { ok: true; file: JavaFile } | { ok: false; error: JavaSyntaxError } {
   try {
-    return { ok: true, file: javaFileModel(parse(source), source) };
+    return { ok: true, file: javaFileModel(parse(forJavaParser(source)), source) };
   } catch (err) {
     const e = javaError(err instanceof Error ? err.message : String(err));
     return { ok: false, error: e ?? { line: 1, column: 1, message: 'Syntax error' } };

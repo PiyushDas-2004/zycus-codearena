@@ -5,7 +5,7 @@ import { createFakeServer } from './support/fakeServer';
 
 const BASE = 'https://api.zycus.test';
 
-async function setup(options: { refreshFails?: boolean } = {}) {
+async function setup(options: { refreshFails?: boolean; refreshMs?: number } = {}) {
   asyncStorage.seed({
     [SESSION_KEY]: JSON.stringify({ userId: 'u1', tokens: { accessToken: 'access-0', refreshToken: 'refresh-0' } }),
   });
@@ -28,7 +28,8 @@ describe('token refresh', () => {
   });
 
   it('refreshes once when several requests get 401 at the same time', async () => {
-    const { server, client, onLogout } = await setup();
+    // A slow refresh: the other requests must wait for it, however long it takes.
+    const { server, client, onLogout } = await setup({ refreshMs: 600 });
     const results = await Promise.all([client.get('/a'), client.get('/b'), client.get('/c')]);
     expect(results).toEqual([{ path: '/a' }, { path: '/b' }, { path: '/c' }]);
     expect(server.refresh).toHaveBeenCalledTimes(1);

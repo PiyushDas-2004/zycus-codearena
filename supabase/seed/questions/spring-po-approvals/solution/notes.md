@@ -14,7 +14,9 @@ memory, the DTO says *Rejected*, nothing is written. **Fix:** `@Transactional` o
 
 - `BudgetExceededException` is **checked**. By default Spring rolls back only for unchecked
   exceptions, so `approve` committed the approval and then answered 422. **Fix:**
-  `rollbackFor = BudgetExceededException.class` (or translate it into an unchecked exception).
+  `rollbackFor = BudgetExceededException.class`, or catch it, `setRollbackOnly()` and rethrow it.
+  (Wrapping it in an unchecked exception also rolls back, but breaks the API: the 422 handler and
+  the JUnit test expect `BudgetExceededException`.)
 - `approveBatch` calls `this.approveOne(...)`. That call doesn't go through the proxy, so
   `REQUIRES_NEW` is ignored. Every PO runs in the batch's transaction: a refused PO's
   `recordApproval()` is flushed at the batch commit, and a runtime exception for one id (already

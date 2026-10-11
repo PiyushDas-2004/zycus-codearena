@@ -5,10 +5,9 @@
  */
 import type * as Monaco from 'monaco-editor';
 import runtimeUrl from 'virtual:sandbox-runtime';
-import { modelJava } from '@/shared/javaModel';
 import { buildSandboxScript, isTestFile, type SandboxModule, type SandboxOutcome } from './buildScript';
-
-let javaParser: Promise<typeof import('java-parser')> | null = null;
+import { javaParseLimitMs } from '@/shared/javaModel';
+import { parseJava } from './javaParser';
 
 const RUN_TIMEOUT_MS = 20_000;
 const COMPILE_TIMEOUT_MS = 15_000;
@@ -50,8 +49,7 @@ async function compile(
         return { module: { path: f.path, kind: 'json', code: f.model.getValue() }, errors: [] };
       // Java can't run here: tests import a model of the file (types, annotations, methods).
       if (f.path.endsWith('.java')) {
-        const { parse } = await (javaParser ??= import('java-parser'));
-        const res = modelJava(parse, f.model.getValue());
+        const res = await parseJava(f.model.getValue());
         return res.ok
           ? { module: { path: f.path, kind: 'json', code: JSON.stringify(res.file) }, errors: [] }
           : { errors: [{ path: f.path, line: res.error.line, message: res.error.message }] };
@@ -109,7 +107,11 @@ export async function runQuestionTests(
   // 1. Compile (and refuse to run code that doesn't parse: the errors are clearer than a crash).
   let compiled: Awaited<ReturnType<typeof compile>>;
   try {
-    compiled = await withTimeout(compile(monaco, files), COMPILE_TIMEOUT_MS);
+    // Java files are parsed one at a time, each with its own limit (see javaParser.ts).
+    const javaLimits = files
+      .filter((f) => f.path.endsWith('.java'))
+      .reduce((ms, f) => ms + javaParseLimitMs(f.model.getValue()), 0);
+    compiled = await withTimeout(compile(monaco, files), COMPILE_TIMEOUT_MS + javaLimits);
   } catch {
     return {
       type: 'crash',

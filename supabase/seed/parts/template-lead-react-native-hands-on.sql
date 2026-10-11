@@ -1,7 +1,7 @@
 -- ════════════════════════════════════════════════════════════════════════════
 -- GENERATED FILE: do not edit. Built by `npm run seed:build` from
 -- supabase/seed/questions/* and supabase/seed/templates/*.
--- Template "Lead React Native Developer – Hands-On". Safe to re-run: rows that already exist are left untouched.
+-- Template "Lead React Native Developer – Hands-On". Safe to re-run: what is already installed and up to date is left untouched.
 -- ════════════════════════════════════════════════════════════════════════════
 begin;
 

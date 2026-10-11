@@ -99,7 +99,7 @@ for (const t of templates) {
   }
 }
 
-// ── SQL for one question / template (insert-only: existing rows are never touched) ────────────
+// ── SQL for one question / template ─────────────────────────────────────────────────────────
 /**
  * Long texts (statements, code) are written as base64 and decoded by Postgres: the Dashboard's SQL
  * Editor sends the script through a web API, and code inside SQL strings (quotes, `<tags onX=…>`)
@@ -111,46 +111,85 @@ const text = (s: string) =>
     : `convert_from(decode('${Buffer.from(s, 'utf8').toString('base64')}', 'base64'), 'UTF8')`;
 const json = (v: unknown) => `(${text(JSON.stringify(v))})::jsonb`;
 
+const QUESTION_BLOCK = '$question$';
+
+/**
+ * A question, as one block keyed on its `version`: installed when missing, replaced (statement,
+ * files, rubric, reference solution) when the installed copy is older, and left untouched when it
+ * is the same version, so re-running never undoes edits. Tests already started keep the frozen
+ * copy they began with (session_questions).
+ */
 function questionSql(q: Question): string[] {
   const id = str(q.id as string);
+  const v = int(q.version);
+  const paths = `array[${q.files.map((f) => str(f.path)).join(', ')}]::text[]`;
   const out = [
-    `-- Question: ${q.slug}`,
-    'insert into public.questions (id, slug, title, category, role_tags, skill_tags, difficulty, ' +
-      'time_suggestion_minutes, statement_md, is_sample, status) values (',
-    `  ${id}, ${str(q.slug)}, ${str(q.title)}, ${str(q.category)}, ${textArray(q.role_tags)}, ` +
+    `-- Question: ${q.slug} (version ${q.version})`,
+    `do ${QUESTION_BLOCK}`,
+    'declare',
+    '  v_installed int;',
+    'begin',
+    `  select version into v_installed from public.questions where id = ${id};`,
+    `  if v_installed >= ${v} then`,
+    `    raise notice 'Question "${q.slug}": version % installed, left unchanged', v_installed;`,
+    '    return;',
+    '  end if;',
+    '  insert into public.questions (id, slug, title, category, role_tags, skill_tags, difficulty, ' +
+      'time_suggestion_minutes, statement_md, is_sample, status, version) values (',
+    `    ${id}, ${str(q.slug)}, ${str(q.title)}, ${str(q.category)}, ${textArray(q.role_tags)}, ` +
       `${textArray(q.skill_tags)}, ${str(q.difficulty)}, ${int(q.time_suggestion_minutes)},`,
-    `  ${text(q.statement_md)},`,
-    `  ${bool(q.is_sample)}, ${str(q.status)}`,
-    ') on conflict (id) do nothing;',
-    'insert into public.question_files (question_id, path, language, content, readonly, sort_order) values',
+    `    ${text(q.statement_md)},`,
+    `    ${bool(q.is_sample)}, ${str(q.status)}, ${v}`,
+    '  ) on conflict (id) do update set',
+    '    slug = excluded.slug, title = excluded.title, category = excluded.category,',
+    '    role_tags = excluded.role_tags, skill_tags = excluded.skill_tags, difficulty = excluded.difficulty,',
+    '    time_suggestion_minutes = excluded.time_suggestion_minutes, statement_md = excluded.statement_md,',
+    '    is_sample = excluded.is_sample, status = excluded.status, version = excluded.version;',
+    `  delete from public.question_files where question_id = ${id} and path <> all (${paths});`,
+    '  insert into public.question_files (question_id, path, language, content, readonly, sort_order) values',
     q.files
       .map(
         (f, i) =>
-          `  (${id}, ${str(f.path)}, ${str(f.language)}, ${text(f.content)}, ${bool(f.readonly)}, ${int(i)})`,
+          `    (${id}, ${str(f.path)}, ${str(f.language)}, ${text(f.content)}, ${bool(f.readonly)}, ${int(i)})`,
       )
       .join(',\n'),
-    'on conflict (question_id, path) do nothing;',
+    '  on conflict (question_id, path) do update set language = excluded.language, content = excluded.content,',
+    '    readonly = excluded.readonly, sort_order = excluded.sort_order;',
+    `  delete from public.question_rubric_items where question_id = ${id}` +
+      (q.rubric.length
+        ? ` and key <> all (array[${q.rubric.map((r) => str(r.key)).join(', ')}]::text[]);`
+        : ';'),
   ];
   if (q.rubric.length) {
     out.push(
-      'insert into public.question_rubric_items (question_id, key, criterion, description, max_points, sort_order) values',
+      '  insert into public.question_rubric_items (question_id, key, criterion, description, max_points, sort_order) values',
       q.rubric
         .map(
           (r, i) =>
-            `  (${id}, ${str(r.key)}, ${text(r.criterion)}, ${text(r.description)}, ${int(r.max_points)}, ${int(i)})`,
+            `    (${id}, ${str(r.key)}, ${text(r.criterion)}, ${text(r.description)}, ${int(r.max_points)}, ${int(i)})`,
         )
         .join(',\n'),
-      'on conflict (question_id, key) do nothing;',
+      '  on conflict (question_id, key) do update set criterion = excluded.criterion,',
+      '    description = excluded.description, max_points = excluded.max_points, sort_order = excluded.sort_order;',
     );
   }
   if (q.reference_solution) {
     out.push(
-      'insert into public.question_solutions (question_id, notes_md, files) values (',
-      `  ${id}, ${text(q.reference_solution.notes_md)}, ${json(q.reference_solution.files)}`,
-      ') on conflict (question_id) do nothing;',
+      '  insert into public.question_solutions (question_id, notes_md, files) values (',
+      `    ${id}, ${text(q.reference_solution.notes_md)}, ${json(q.reference_solution.files)}`,
+      '  ) on conflict (question_id) do update set notes_md = excluded.notes_md, files = excluded.files;',
     );
   }
-  out.push('');
+  out.push(
+    '  if v_installed is null then',
+    `    raise notice 'Question "${q.slug}": installed (version ${q.version})';`,
+    '  else',
+    `    raise notice 'Question "${q.slug}": updated from version % to ${q.version}', v_installed;`,
+    '  end if;',
+    'end',
+    `${QUESTION_BLOCK};`,
+    '',
+  );
   return out;
 }
 
@@ -223,7 +262,7 @@ const HEADER = (what: string) => [
 // ── Parts (one per question, then one per template) and seed.sql (all of them) ─────────────────
 const part = (what: string, lines: string[]) =>
   [
-    ...HEADER(`${what} Safe to re-run: rows that already exist are left untouched.`),
+    ...HEADER(`${what} Safe to re-run: what is already installed and up to date is left untouched.`),
     'begin;',
     '',
     ...lines,
@@ -241,8 +280,12 @@ const parts: [string, string][] = [
   ]),
 ];
 for (const [name, sql] of parts) {
-  if (sql.split(BLOCK).length - 1 !== (name.startsWith('template-') ? 2 : 0)) {
-    fail('Seed text must not contain the reserved quote tag', `${BLOCK} in ${name}`);
+  const template = name.startsWith('template-');
+  if (
+    sql.split(BLOCK).length - 1 !== (template ? 2 : 0) ||
+    sql.split(QUESTION_BLOCK).length - 1 !== (template ? 0 : 2)
+  ) {
+    fail('Seed text must not contain the reserved quote tags', `${BLOCK} / ${QUESTION_BLOCK} in ${name}`);
   }
 }
 const seedSql = [

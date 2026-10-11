@@ -17,14 +17,14 @@ const MINE = [item('3')];
 
 /** A fake client whose responses the test releases by hand, in any order. */
 function fakeClient() {
-  const requests = new Map<string, { resolve: (data: unknown) => void; signal?: AbortSignal }>();
+  const requests = new Map<string, { resolve: (data: unknown) => void; reject: (e: Error) => void; signal?: AbortSignal }>();
   const get = jest.fn(
     (path: string, options: RequestOptions = {}) =>
       new Promise((resolve, reject) => {
         const abort = () => reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
         if (options.signal?.aborted) return abort();
         options.signal?.addEventListener('abort', abort);
-        requests.set(path, { resolve, signal: options.signal });
+        requests.set(path, { resolve, reject, signal: options.signal });
       }),
   );
   return {
@@ -34,6 +34,11 @@ function fakeClient() {
       const request = requests.get(path);
       if (!request) throw new Error(`No request for ${path} reached the server (cancelled before it was sent?)`);
       await act(async () => request.resolve(data));
+    },
+    async fail(path: string, error: Error) {
+      const request = requests.get(path);
+      if (!request) throw new Error(`No request for ${path} reached the server (cancelled before it was sent?)`);
+      await act(async () => request.reject(error));
     },
   };
 }
@@ -70,6 +75,18 @@ describe('useApprovals', () => {
     await api.respond('/approvals?filter=urgent', URGENT); // arrives late
     expect(result.current.items).toEqual(MINE);
     expect(api.signalFor('/approvals?filter=urgent')?.aborted).toBe(true);
+  });
+
+  it('shows an error when the list fails to load, and clears it on the next load', async () => {
+    const api = fakeClient();
+    const { result, rerender } = render(api);
+    await api.fail('/approvals?filter=all', new Error('Network request failed'));
+    expect(result.current).toEqual({ items: [], loading: false, error: 'Network request failed' });
+
+    rerender({ filter: 'urgent' });
+    expect(result.current.error).toBeNull();
+    await api.respond('/approvals?filter=urgent', URGENT);
+    expect(result.current).toEqual({ items: URGENT, loading: false, error: null });
   });
 
   it('cancels the request when the screen goes away', async () => {

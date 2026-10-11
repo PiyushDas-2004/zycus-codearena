@@ -9,7 +9,7 @@ const saved = { userId: 'u1', tokens: { accessToken: 'access-0', refreshToken: '
 describe('session persistence (cold start)', () => {
   beforeEach(() => {
     asyncStorage.seed({ [SESSION_KEY]: JSON.stringify(saved) });
-    asyncStorage.setLatency(20); // storage reads take a moment on a real device
+    asyncStorage.setLatency(600); // storage reads can take a while on a real device
   });
 
   it('the first request after launch carries the saved access token', async () => {

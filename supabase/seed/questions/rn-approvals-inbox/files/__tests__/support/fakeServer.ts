@@ -4,7 +4,14 @@ import { HttpError, type FetchLike, type Tokens } from '../../src/types';
  * A fake API server for the HTTP client tests. Access tokens are checked when a request arrives;
  * refresh tokens rotate on every successful refresh (the previous refresh token stops working).
  */
-export function createFakeServer(options: { baseUrl: string; access: string; refresh: string; refreshFails?: boolean }) {
+export function createFakeServer(options: {
+  baseUrl: string;
+  access: string;
+  refresh: string;
+  refreshFails?: boolean;
+  /** How long a refresh takes (a slow network can take seconds). */
+  refreshMs?: number;
+}) {
   let valid: Tokens = { accessToken: options.access, refreshToken: options.refresh };
   let generation = 0;
   const calls: { path: string; auth: string | undefined }[] = [];
@@ -12,7 +19,7 @@ export function createFakeServer(options: { baseUrl: string; access: string; ref
   const holding = new Set<string>();
 
   const refresh = jest.fn(async (refreshToken: string): Promise<Tokens> => {
-    await new Promise((r) => setTimeout(r, 5));
+    await new Promise((r) => setTimeout(r, options.refreshMs ?? 5));
     if (options.refreshFails || refreshToken !== valid.refreshToken) {
       throw new HttpError(401, 'invalid_grant');
     }

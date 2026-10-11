@@ -15,6 +15,8 @@ Requires Node.js 22.22+ (see `.nvmrc`). Docker is **not** required.
 npm install
 npm run dev          # http://localhost:5173 against the Supabase project in .env.local
 npm run dev:mock     # http://localhost:5174 with an in-browser mock backend (code DEMO-DEMO-DEMO)
+npm run local:db     # a local stand-in for Supabase (real migrations, in memory); then:
+npm run dev:local    # http://localhost:5175 against it, admin portal included
 npm run check        # lint + format + seed check + all tests + type-check + build
 ```
 
@@ -26,6 +28,8 @@ npm run check        # lint + format + seed check + all tests + type-check + bui
 | `npm run typecheck` | Strict TypeScript for the app and the Node tooling |
 | `npm run sql:bundle` | Writes `supabase/dist/codearena-database/*.sql`: run them **one by one, in file-name order** in Supabase Dashboard → SQL Editor to install or upgrade a project (schema first, then one file per question, then the template; each is one transaction and safe to re-run). They are separate files because the SQL Editor fails on very large scripts ("Failed to fetch") |
 | `npm run sql:copy` | Puts those scripts on the clipboard one at a time, for pasting into the SQL Editor (`-- 3` starts at script 3, `-- --list` lists them) |
+| `npm run local:db` / `dev:local` / `local:worker` | A local stand-in for Supabase (the real migrations and seed in PGlite, test staff accounts in `scripts/local-stack/seed.json`), the app against it, and the coding-assistant worker against it: end-to-end tests and demos without touching the real project |
+| `/admin` | The admin portal: invite candidates, follow tests live, reopen tests, review results. Setup and use: [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) |
 | `npm run assistant:worker` | Runs the coding assistant's worker on a laptop inside the Zycus network while assessments run (see [docs/AI_ASSISTANT_SETUP.md](docs/AI_ASSISTANT_SETUP.md)) |
 | `npm run models:fetch` | Downloads and verifies the face-detection model into `public/models/` (once; the file is committed) |
 

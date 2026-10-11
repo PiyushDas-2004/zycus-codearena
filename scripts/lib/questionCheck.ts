@@ -3,15 +3,15 @@
  * - typecheckFiles(): TypeScript with the editor's settings and type declarations (strict, React,
  *   React Native, test sandbox), so starter code and solutions must compile cleanly and wrong code
  *   must be reported.
- * - runSandboxTests(): the real sandbox runtime (same bundle the browser uses) in a Node vm.
+ * - runSandboxTests(): the real sandbox runtime (same bundle the browser uses) in a Node vm, in a
+ *   worker thread that is stopped after a timeout (like the browser's Web Worker).
  */
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import vm from 'node:vm';
-import { parse as parseJava } from 'java-parser';
+import { Worker } from 'node:worker_threads';
 import ts from 'typescript';
-import { modelJava } from '../../src/shared/javaModel.ts';
+import { JAVA_TOO_SLOW, javaParseLimitMs, type modelJava } from '../../src/shared/javaModel.ts';
 import {
   buildSandboxScript,
   isTestFile,
@@ -116,14 +116,101 @@ export function typecheckFiles(files: SourceFile[]): Diagnostic[] {
 
 let runtime: Promise<string> | null = null;
 
-/** Runs the question's test files in the sandbox runtime (Node vm, real timers). */
+type JavaResult = ReturnType<typeof modelJava>;
+let javaWorker: Promise<Worker> | null = null;
+let javaQueue: Promise<unknown> = Promise.resolve();
+
+/** The parser's worker thread, once it has loaded the parser (that time isn't part of the limit). */
+function startJavaWorker(): Promise<Worker> {
+  return new Promise((resolve, reject) => {
+    const w = new Worker(new URL('./javaParseWorker.ts', import.meta.url), { execArgv: [] });
+    w.unref(); // a parse in progress keeps the process alive through its timer
+    w.once('error', reject);
+    w.on('message', function ready(message: unknown) {
+      if (message !== 'ready') return;
+      w.off('message', ready).off('error', reject);
+      resolve(w);
+    });
+  });
+}
+
+/**
+ * Parses a Java file in a worker thread, one file at a time, as the browser does (see
+ * src/features/runner/javaParser.ts): some valid Java takes java-parser minutes, so a parse that
+ * takes longer than the limit is stopped and reported as an error on that file.
+ */
+function parseJavaFile(source: string): Promise<JavaResult> {
+  const run = async () => {
+    let w: Worker;
+    try {
+      w = await (javaWorker ??= startJavaWorker());
+    } catch (err) {
+      javaWorker = null;
+      return {
+        ok: false,
+        error: { line: 1, column: 1, message: `The Java parser crashed: ${String(err)}` },
+      } as const;
+    }
+    return new Promise<JavaResult>((resolve) => {
+      const done = (result: JavaResult, stop: boolean) => {
+        clearTimeout(timer);
+        w.off('message', onMessage).off('error', onError);
+        if (stop) {
+          void w.terminate();
+          javaWorker = null;
+        }
+        resolve(result);
+      };
+      const onMessage = (result: JavaResult) => done(result, false);
+      const onError = (err: Error) =>
+        done(
+          { ok: false, error: { line: 1, column: 1, message: `The Java parser crashed: ${String(err)}` } },
+          true,
+        );
+      const timer = setTimeout(
+        () => done({ ok: false, error: JAVA_TOO_SLOW }, true),
+        javaParseLimitMs(source),
+      );
+      w.on('message', onMessage).on('error', onError);
+      w.postMessage(source);
+    });
+  };
+  const result = javaQueue.then(run);
+  javaQueue = result;
+  return result;
+}
+
+/**
+ * Runs the script in a Node vm inside a worker thread, as the browser runs it in a Web Worker: an
+ * endless loop in the candidate's code is stopped by terminating the thread, and a promise
+ * rejection nobody handles is only logged (as in the browser) instead of crashing this process.
+ */
+const WORKER_SOURCE = `
+const { parentPort, workerData } = require('node:worker_threads');
+const vm = require('node:vm');
+process.on('unhandledRejection', (reason) => console.error('Unhandled rejection in the tested code:', reason));
+const context = vm.createContext({
+  setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, queueMicrotask, console,
+  MessageChannel, TextEncoder, TextDecoder, AbortController, AbortSignal, EventTarget, Event,
+  CustomEvent, DOMException, structuredClone, crypto: globalThis.crypto, performance, URL,
+  __sandboxResult: (msg) => parentPort.postMessage(JSON.parse(JSON.stringify(msg))),
+});
+try {
+  vm.runInContext(workerData.script, context, { filename: 'sandbox.js' });
+} catch (err) {
+  parentPort.postMessage({ type: 'crash', error: String(err) });
+}
+`;
+
+/** Runs the question's test files in the sandbox runtime (Node vm in a worker thread, real timers). */
 export async function runSandboxTests(files: SourceFile[], timeoutMs = 30_000): Promise<SandboxOutcome> {
   runtime ??= bundleSandboxRuntime({ minify: false });
   const modules: SandboxModule[] = [];
+  const syntaxErrors: { path: string; line: number; message: string }[] = [];
   for (const f of files) {
     if (f.path.endsWith('.json')) modules.push({ path: f.path, kind: 'json', code: f.content });
     else if (f.path.endsWith('.java')) {
-      const res = modelJava(parseJava, f.content);
+      const res = await parseJavaFile(f.content);
       if (!res.ok)
         return {
           type: 'compile',
@@ -133,47 +220,43 @@ export async function runSandboxTests(files: SourceFile[], timeoutMs = 30_000): 
     } else if (/\.(tsx?|jsx?)$/.test(f.path)) {
       const out = ts.transpileModule(f.content, {
         fileName: f.path,
+        reportDiagnostics: true,
         compilerOptions: { ...COMPILER_OPTIONS, noEmit: false, isolatedModules: true },
       });
+      // The editor refuses code that doesn't parse; the transpiler alone would repair some of it.
+      for (const d of out.diagnostics ?? []) {
+        // Syntax errors only (they point into the file); not notes about compiler options.
+        if (d.category !== ts.DiagnosticCategory.Error || !d.file) continue;
+        const line = d.file.getLineAndCharacterOfPosition(d.start ?? 0).line + 1;
+        syntaxErrors.push({
+          path: f.path,
+          line,
+          message: ts.flattenDiagnosticMessageText(d.messageText, '\n'),
+        });
+      }
       modules.push({ path: f.path, kind: 'js', code: out.outputText });
     }
   }
+  if (syntaxErrors.length) return { type: 'compile', errors: syntaxErrors };
   const tests = files.filter((f) => isTestFile(f.path) && /\.[jt]sx?$/.test(f.path)).map((f) => f.path);
   const script = buildSandboxScript(await runtime, modules, tests);
   return new Promise<SandboxOutcome>((resolve) => {
-    const timer = setTimeout(() => resolve({ type: 'timeout' }), timeoutMs);
-    const context = vm.createContext({
-      setTimeout,
-      clearTimeout,
-      setInterval,
-      clearInterval,
-      setImmediate,
-      queueMicrotask,
-      console,
-      MessageChannel,
-      TextEncoder,
-      TextDecoder,
-      AbortController,
-      AbortSignal,
-      EventTarget,
-      Event,
-      CustomEvent,
-      DOMException,
-      structuredClone,
-      crypto: globalThis.crypto,
-      performance,
-      URL,
-      __sandboxResult: (msg: SandboxOutcome) => {
-        clearTimeout(timer);
-        resolve(msg);
-      },
-    });
-    try {
-      vm.runInContext(script, context, { filename: 'sandbox.js' });
-    } catch (err) {
+    // execArgv: [] so flags of the caller (e.g. --input-type=module) don't change how this runs.
+    const worker = new Worker(WORKER_SOURCE, { eval: true, execArgv: [], workerData: { script } });
+    let settled = false;
+    const settle = (outcome: SandboxOutcome) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
-      resolve({ type: 'crash', error: String(err) });
-    }
+      void worker.terminate();
+      resolve(outcome);
+    };
+    const timer = setTimeout(() => settle({ type: 'timeout' }), timeoutMs);
+    worker.once('message', (msg: SandboxOutcome) => settle(msg));
+    worker.once('error', (err) => settle({ type: 'crash', error: String(err) }));
+    worker.once('exit', (code) =>
+      settle({ type: 'crash', error: `The test run stopped (exit code ${code}).` }),
+    );
   });
 }
 

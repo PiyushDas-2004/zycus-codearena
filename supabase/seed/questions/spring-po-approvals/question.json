@@ -2,6 +2,7 @@
   "format": "zycus-codearena/question@1",
   "id": "04a206ea-655a-40fd-9651-b01088d59d98",
   "slug": "spring-po-approvals",
+  "version": 2,
   "title": "PO Approvals: transactions, idempotency and concurrency (Spring Boot)",
   "category": "Spring Boot debugging",
   "role_tags": [

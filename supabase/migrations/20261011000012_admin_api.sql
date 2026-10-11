@@ -1048,6 +1048,27 @@ begin
 end;
 $$;
 
+-- candidate_get_state (0005): coming back with the old tab also uses up the expected sign-in, so a
+-- later sign-in elsewhere counts again.
+create or replace function public.candidate_get_state(p_token text) returns jsonb
+language plpgsql volatile security definer set search_path = '' as $$
+declare
+  r record;
+begin
+  select * into r from private.resolve_session(p_token);
+  if r.error is not null then
+    return jsonb_build_object('ok', false, 'error', r.error);
+  end if;
+  if (r.session).quiet_next_login then
+    update public.sessions set quiet_next_login = false where id = (r.session).id;
+  end if;
+  if private.is_overdue(r.session) then
+    perform private.finalize_session((r.session).id, 'time_up');
+  end if;
+  return jsonb_build_object('ok', true, 'state', private.session_state((r.session).id));
+end;
+$$;
+
 -- ── Function privileges (see 0003) ──────────────────────────────────────────
 -- (create or replace keeps the grants of the functions redefined above.)
 revoke all on function

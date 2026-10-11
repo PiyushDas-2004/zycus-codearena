@@ -1,4 +1,7 @@
-/** Labels and formatting shared by the admin pages. Times show in the viewer's time zone. */
+/**
+ * Labels and formatting shared by the admin pages. Times show in the viewer's time zone, in Indian
+ * English ("11 Oct 2026, 2:05 pm IST").
+ */
 import type { BadgeTone } from '@/design/components';
 import type { CandidateRow, InvitationState, SubmitReason } from '../api/types';
 
@@ -29,7 +32,8 @@ export const SUBMIT_REASON: Record<SubmitReason, string> = {
   admin_force: 'Submitted by staff',
 };
 
-const dateTime = new Intl.DateTimeFormat(undefined, {
+const LOCALE = 'en-IN';
+const dateTime = new Intl.DateTimeFormat(LOCALE, {
   day: 'numeric',
   month: 'short',
   year: 'numeric',
@@ -37,13 +41,13 @@ const dateTime = new Intl.DateTimeFormat(undefined, {
   minute: '2-digit',
   timeZoneName: 'short',
 });
-const dateTimeShort = new Intl.DateTimeFormat(undefined, {
+const dateTimeShort = new Intl.DateTimeFormat(LOCALE, {
   day: 'numeric',
   month: 'short',
   hour: '2-digit',
   minute: '2-digit',
 });
-const time = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const time = new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 export const formatDateTime = (ms: number | null | undefined) => (ms ? dateTime.format(ms) : '—');
 export const formatDateTimeShort = (ms: number | null | undefined) => (ms ? dateTimeShort.format(ms) : '—');

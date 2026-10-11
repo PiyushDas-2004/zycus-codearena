@@ -264,7 +264,23 @@ export function useFocusEffect(effect: () => (() => void) | void) {
     };
   }, [effect]);
 }
-export const useIsFocused = () => focused;
+// Like React Navigation, useIsFocused() re-renders its component when the screen gains or loses
+// focus, so an effect keyed on it is a valid way to subscribe while focused.
+const focusSubscribers = new Set<() => void>();
+const subscribeFocus = (onChange: () => void) => {
+  focusSubscribers.add(onChange);
+  return () => {
+    focusSubscribers.delete(onChange);
+  };
+};
+export const useIsFocused = () => React.useSyncExternalStore(subscribeFocus, () => focused);
+/** Re-renders useIsFocused() users at once (tests call blur()/focus() outside act()). */
+function notifyFocus() {
+  if (!focusSubscribers.size) return;
+  React.act(() => {
+    for (const onChange of [...focusSubscribers]) onChange();
+  });
+}
 export const useNavigation = () => ({
   navigate() {},
   goBack() {},
@@ -280,15 +296,18 @@ export const navigationControl = {
       if (typeof e.cleanup === 'function') e.cleanup();
       e.cleanup = undefined;
     }
+    notifyFocus();
   },
   focus() {
     if (focused) return;
     focused = true;
     for (const e of focusEffects) e.cleanup = e.focus();
+    notifyFocus();
   },
   reset() {
     focused = true;
     focusEffects.clear();
+    focusSubscribers.clear();
   },
 };
 

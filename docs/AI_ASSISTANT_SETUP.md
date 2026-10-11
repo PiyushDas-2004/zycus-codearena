@@ -24,8 +24,9 @@ candidate's browser ◀─reply─ Supabase ◀───────────
 
 ## One-time setup
 
-1. **Database:** run the numbered scripts in `supabase/dist/codearena-database/` in the SQL Editor
-   (see the README). `01-schema.sql` adds the assistant tables.
+1. **Database:** run the numbered scripts in `supabase/dist/codearena-database/` in the SQL Editor,
+   in order (`npm run sql:copy` puts each on the clipboard). The schema scripts add the assistant
+   tables.
 2. **`.env.local`** on the laptop (already done on Piyush's machine) needs these lines:
    ```
    VITE_SUPABASE_URL=…            (already there)

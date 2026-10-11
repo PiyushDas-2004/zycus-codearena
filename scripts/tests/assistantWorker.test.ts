@@ -189,7 +189,10 @@ describe('assistant worker', () => {
       ASSISTANT_WORKER_SECRET: SECRET,
       ASSISTANT_GATEWAY_RECHECK_MS: '200',
     });
-    await new Promise((r) => setTimeout(r, 1500));
+    // Once it has started (slow on a busy machine), it waits for the gateway instead of checking in.
+    for (let i = 0; i < 100 && !/Pausing/.test(worker.output()); i++)
+      await new Promise((r) => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 600));
     expect(nextCalls, worker.output()).toBe(0); // not checking in: candidates are told at once
     expect(worker.output()).toMatch(/Pausing/);
 

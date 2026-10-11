@@ -74,6 +74,89 @@ export const transactionalOf = (t: JavaType, m: JavaMethod) =>
 export const callsOn = (source: string, receiver: string, name: string) =>
   new RegExp(`\\b${receiver}\\s*\\.\\s*${name}\\s*\\(`).test(source);
 
+/** Calls `.<name>(` on anything in some code. */
+export const calls = (source: string, name: string) => new RegExp(`\\.\\s*${name}\\s*\\(`).test(source);
+
+/**
+ * A method's body followed by the bodies of the methods of its own class that it calls (directly,
+ * on `this`, or through them), so moving code into a helper method changes nothing. Calls on other
+ * objects (including this class's own proxy) aren't followed.
+ */
+export const withHelpers = (t: JavaType, m: JavaMethod) => [m, ...helpersOf(t, m)].map(body).join('\n');
+
+/** The methods of its own class that a method calls, directly or through them (see withHelpers). */
+export function helpersOf(t: JavaType, m: JavaMethod): JavaMethod[] {
+  const found = [m];
+  // for...of also visits the methods pushed while it runs.
+  for (const current of found) {
+    const source = body(current);
+    for (const other of t.methods) {
+      const called = new RegExp(
+        `(?<![\\w.$])${other.name}\\s*\\(|\\bthis\\s*\\.\\s*${other.name}\\s*\\(|\\bthis\\s*::\\s*${other.name}\\b`,
+      );
+      if (!found.includes(other) && called.test(source)) found.push(other);
+    }
+  }
+  return found.slice(1);
+}
+
+/** A type you can edit, by its simple or qualified name (as a field's type gives it). */
+export const editableType = (name: string) => {
+  const simple = name.replace(/<.*$/, '').split('.').pop();
+  return editableTypes.find((t) => t.name === simple) ?? null;
+};
+
+/** `@Transactional` that starts or joins a transaction (not NOT_SUPPORTED, NEVER, SUPPORTS, MANDATORY). */
+export const opensTransaction = (tx: JavaAnnotation | null) =>
+  !!tx && !/\b(NOT_SUPPORTED|NEVER|SUPPORTS|MANDATORY)\b/.test(tx.text);
+
+export const isReadOnly = (tx: JavaAnnotation | null) => !!tx && /readOnly\s*=\s*true/.test(tx.text);
+
+/** A method that runs outside any transaction when called from a controller. */
+export const outsideTransaction = (tx: JavaAnnotation | null) =>
+  !tx || /\b(NOT_SUPPORTED|NEVER|SUPPORTS)\b/.test(tx.text);
+
+export interface Template {
+  name: string;
+  /** Set up with PROPAGATION_REQUIRES_NEW (Spring Boot's own TransactionTemplate is REQUIRED). */
+  requiresNew: boolean;
+  readOnly: boolean;
+}
+
+/** The TransactionTemplate / TransactionOperations fields of a class and how they're set up. */
+export function templatesOf(t: JavaType): Template[] {
+  return t.fields
+    .filter((f) => /^(TransactionTemplate|TransactionOperations)\b/.test(f.type))
+    .map((f) => ({
+      name: f.name,
+      requiresNew:
+        new RegExp(`\\b${f.name}\\s*\\.\\s*setPropagationBehavior(Name)?\\s*\\([^;]*REQUIRES_NEW`).test(t.text) ||
+        new RegExp(`\\b${f.name}\\s*=\\s*new\\s+TransactionTemplate\\s*\\([^;]*REQUIRES_NEW`).test(t.text),
+      readOnly: new RegExp(`\\b${f.name}\\s*\\.\\s*setReadOnly\\s*\\(\\s*true`).test(t.text),
+    }));
+}
+
+/** Code runs a callback in this template. */
+export const usesTemplate = (source: string, template: Template) =>
+  new RegExp(`\\b${template.name}\\s*\\.\\s*(execute|executeWithoutResult)\\s*\\(`).test(source);
+
+/** Each `catch (...) { ... }` in some code: the caught types and the block. */
+export function catchBlocks(source: string): { types: string; block: string }[] {
+  const out: { types: string; block: string }[] = [];
+  for (const m of source.matchAll(/\bcatch\s*\(([^)]*)\)\s*\{/g)) {
+    let depth = 1;
+    let i = (m.index ?? 0) + m[0].length;
+    const start = i;
+    while (i < source.length && depth > 0) {
+      if (source[i] === '{') depth++;
+      else if (source[i] === '}') depth--;
+      i++;
+    }
+    out.push({ types: m[1] ?? '', block: source.slice(start, i - 1) });
+  }
+  return out;
+}
+
 /** Fails the check with an explanation of what was looked at. */
 export function check(ok: boolean, explanation: string): void {
   if (!ok) throw new Error(explanation);

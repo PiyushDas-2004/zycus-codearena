@@ -2,6 +2,7 @@
   "format": "zycus-codearena/question@1",
   "id": "a7dcbe6c-f122-4051-8368-41c2659815d7",
   "slug": "rn-live-auction",
+  "version": 2,
   "title": "Live Reverse Auction: timers, listeners and rendering (React Native)",
   "category": "React Native debugging",
   "role_tags": ["lead-react-native-developer", "react-native-developer"],

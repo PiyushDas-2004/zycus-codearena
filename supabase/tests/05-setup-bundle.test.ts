@@ -136,6 +136,45 @@ describe('SQL Editor database script', () => {
     ]);
   });
 
+  it('updates a question installed at an older version, and leaves the same version alone', async () => {
+    const Q = '9249d0ed-6c2c-4ea4-80f9-48645dbf737a'; // rn-approvals-inbox, seeded at version 2
+    db = await createTestDb({ migrations: false });
+    await runScripts(db);
+    const files = async () =>
+      (
+        await db!.query<{ path: string; content: string }>(
+          `select path, content from public.question_files where question_id = $1 order by path`,
+          [Q],
+        )
+      ).rows;
+    const current = await files();
+
+    // As installed by the previous release: version 1, older content, a file since removed.
+    await db.exec(`
+      update public.questions set version = 1, title = 'Old title' where id = '${Q}';
+      update public.question_files set content = 'old' where question_id = '${Q}' and path = 'src/types.ts';
+      insert into public.question_files (question_id, path, language, content) values ('${Q}', 'src/gone.ts', 'typescript', '');
+      update public.question_solutions set notes_md = 'old notes' where question_id = '${Q}';
+      delete from public.question_rubric_items where question_id = '${Q}' and key = 'hydration';`);
+    await runScripts(db);
+    expect(await files()).toEqual(current);
+    const q = await db.query<{ version: number; title: string; notes: string; rubric: number }>(
+      `select q.version, q.title, s.notes_md as notes,
+              (select count(*)::int from public.question_rubric_items r where r.question_id = q.id) as rubric
+         from public.questions q join public.question_solutions s on s.question_id = q.id where q.id = $1`,
+      [Q],
+    );
+    expect(q.rows[0]).toMatchObject({ version: 2, title: expect.not.stringMatching(/Old/), rubric: 6 });
+    expect(q.rows[0]?.notes).not.toBe('old notes');
+
+    // Same version: an edit made since stays.
+    await db.exec(
+      `update public.question_files set content = 'edited' where question_id = '${Q}' and path = 'src/types.ts'`,
+    );
+    await runScripts(db);
+    expect((await files()).find((f) => f.path === 'src/types.ts')?.content).toBe('edited');
+  });
+
   it('upgrades a database installed by the Phase 2 script (no migration records) in place', async () => {
     // Phase 2 state: migrations up to the baseline applied directly, sample data loaded, no records.
     db = await createTestDb({ migrations: false });

@@ -1,17 +1,30 @@
 import { fireEvent, getConsoleErrors, screen, textContent } from '@codearena/test-utils';
-import { initialState, invoiceReducer } from '../src/state/invoiceReducer';
+import { initialState, invoiceReducer, type InvoiceState } from '../src/state/invoiceReducer';
 import { PO_LINES, openPo, typeInto, valueOf } from './support/fakeApi';
 
 const duplicateKeyWarnings = () => getConsoleErrors().filter((m) => /same key/i.test(m));
 const gross = () => textContent(screen.getByTestId('total-gross'));
 
 describe('invoice lines', () => {
-  it('gives every line its own id, even when several are created at once', () => {
-    jest.useFakeTimers();
-    const imported = invoiceReducer(initialState, { type: 'importPoLines', lines: PO_LINES });
-    const added = invoiceReducer(invoiceReducer(imported, { type: 'addLine' }), { type: 'addLine' });
+  it('gives every line its own id, even when several are created at once', async () => {
+    await openPo(); // the PO's three lines are imported at once
+    fireEvent.click(screen.getByTestId('add-line'));
+    fireEvent.click(screen.getByTestId('add-line'));
 
-    expect(new Set(added.lines.map((l) => l.id)).size).toBe(5);
+    // Each line keeps its own value: lines that shared an id would change together.
+    ['SKU-1', 'SKU-2', 'SKU-3', 'SKU-4', 'SKU-5'].forEach((sku, i) => typeInto(`sku-${i + 1}`, sku));
+    expect([1, 2, 3, 4, 5].map((n) => valueOf(`sku-${n}`))).toEqual(['SKU-1', 'SKU-2', 'SKU-3', 'SKU-4', 'SKU-5']);
+    expect(duplicateKeyWarnings()).toEqual([]);
+  });
+
+  it('gives a line added after a removal its own id', async () => {
+    await openPo();
+    fireEvent.click(screen.getByTestId('remove-1'));
+    fireEvent.click(screen.getByTestId('add-line'));
+    typeInto('sku-3', 'SKU-NEW');
+
+    expect([valueOf('sku-1'), valueOf('sku-2'), valueOf('sku-3')]).toEqual(['SKU-B', 'SKU-C', 'SKU-NEW']);
+    expect(duplicateKeyWarnings()).toEqual([]);
   });
 
   it('edits only the line that was changed', async () => {
@@ -74,8 +87,10 @@ describe('totals and undo', () => {
   });
 
   it('an edit never changes the version that Undo returns to', () => {
-    jest.useFakeTimers();
-    const imported = invoiceReducer(initialState, { type: 'importPoLines', lines: PO_LINES });
+    const imported: InvoiceState = {
+      ...initialState,
+      lines: PO_LINES.map((line, i) => ({ ...line, id: `line-${i + 1}` })),
+    };
     const id = imported.lines[0]!.id;
 
     const edited = invoiceReducer(imported, { type: 'updateLine', id, patch: { quantity: 99 } });

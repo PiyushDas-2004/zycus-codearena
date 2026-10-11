@@ -37,7 +37,9 @@ or quick clicks. React keys collide, and `updateLine`/`removeLine` by id hit the
 several at once.
 
 - **Accept:** a counter, `crypto.randomUUID()` (secure contexts only; mention it), or a
-  ref-based id generator.
+  ref-based id generator in the component that passes the ids in the actions.
+- **Red flag:** ids derived from positions (`line-${index}`, `lines.length`): they collide once a
+  line is removed and another added.
 - **Red flag:** index keys. They break the moment a line is removed.
 
 ### 5. Mutation (`updateLine`)
@@ -62,3 +64,7 @@ autosave effect never see the edit. The Undo snapshot is the same mutated array.
 `toISOString()` is the UTC date. Use `Intl.DateTimeFormat` with `timeZone: 'Asia/Kolkata'`
 (`formatToParts`, or the `en-CA` locale's YYYY-MM-DD). Adding 5.5 h by hand works for India
 (no DST) but is brittle.
+- **Red flag the tests can't catch:** the browser's *local* date (`getDate()`, or
+  `toLocaleDateString()` without `timeZone`). It passes in a browser set to India time, which most
+  candidates have, but dates invoices wrongly for suppliers elsewhere (`InvoiceDraft.invoiceDate`
+  says "in India time, whatever the browser's time zone").
