@@ -1,11 +1,11 @@
 import { asyncStorage } from '@codearena/test-utils';
 import { createHttpClient } from '../src/api/httpClient';
 import { createSessionStore, SESSION_KEY } from '../src/auth/sessionStore';
-import { createFakeServer } from './support/fakeServer';
+import { createFakeServer, elapse } from './support/fakeServer';
 
 const BASE = 'https://api.zycus.test';
 
-async function setup(options: { refreshFails?: boolean; refreshMs?: number } = {}) {
+async function setup(options: { refreshFails?: boolean; refreshMs?: number; forbidden?: string[] } = {}) {
   asyncStorage.seed({
     [SESSION_KEY]: JSON.stringify({ userId: 'u1', tokens: { accessToken: 'access-0', refreshToken: 'refresh-0' } }),
   });
@@ -18,6 +18,10 @@ async function setup(options: { refreshFails?: boolean; refreshMs?: number } = {
   return { server, session, client, onLogout };
 }
 
+afterEach(() => {
+  jest.useRealTimers();
+});
+
 describe('token refresh', () => {
   it('retries with the new access token and stores the rotated tokens', async () => {
     const { server, client, session } = await setup();
@@ -28,10 +32,12 @@ describe('token refresh', () => {
   });
 
   it('refreshes once when several requests get 401 at the same time', async () => {
-    // A slow refresh: the other requests must wait for it, however long it takes.
-    const { server, client, onLogout } = await setup({ refreshMs: 600 });
-    const results = await Promise.all([client.get('/a'), client.get('/b'), client.get('/c')]);
-    expect(results).toEqual([{ path: '/a' }, { path: '/b' }, { path: '/c' }]);
+    jest.useFakeTimers();
+    // A very slow refresh (30 s on a bad network): the other requests must wait for it, however long.
+    const { server, client, onLogout } = await setup({ refreshMs: 30_000 });
+    const all = Promise.all([client.get('/a'), client.get('/b'), client.get('/c')]);
+    await elapse(31_000);
+    await expect(all).resolves.toEqual([{ path: '/a' }, { path: '/b' }, { path: '/c' }]);
     expect(server.refresh).toHaveBeenCalledTimes(1);
     expect(onLogout).not.toHaveBeenCalled();
   });
@@ -45,6 +51,23 @@ describe('token refresh', () => {
     await expect(slow).resolves.toEqual({ path: '/slow' });
     expect(server.refresh).toHaveBeenCalledTimes(1);
     expect(onLogout).not.toHaveBeenCalled();
+  });
+
+  it('refreshes again when the new access token expires later', async () => {
+    const { server, client, session, onLogout } = await setup();
+    await client.get('/a');
+    server.expire(); // the token from the first refresh has expired too
+    await expect(client.get('/b')).resolves.toEqual({ path: '/b' });
+    expect(server.refresh).toHaveBeenCalledTimes(2);
+    expect(session.get()?.tokens).toEqual({ accessToken: 'access-2', refreshToken: 'refresh-2' });
+    expect(onLogout).not.toHaveBeenCalled();
+  });
+
+  it('retries a refused request only once', async () => {
+    const { server, client } = await setup({ forbidden: ['/admin-only'] });
+    await expect(client.get('/admin-only')).rejects.toThrow();
+    expect(server.refresh).toHaveBeenCalledTimes(1);
+    expect(server.calls.filter((c) => c.path === '/admin-only')).toHaveLength(2);
   });
 
   it('logs out exactly once when the refresh token is rejected', async () => {

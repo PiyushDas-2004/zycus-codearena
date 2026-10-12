@@ -12,7 +12,7 @@ let instance: CandidateApi | null = null;
 export function getCandidateApi(): CandidateApi {
   if (instance) return instance;
   if (!envResult.ok) {
-    throw new Error(`CodeArena is not configured: ${envResult.problems.join('; ')}`);
+    throw new Error(`The app is not configured: ${envResult.problems.join('; ')}`);
   }
   const env = envResult.env;
   // Compared against the raw build-time constant (not env.useMockBackend) so production builds drop

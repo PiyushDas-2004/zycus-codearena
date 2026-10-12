@@ -84,11 +84,15 @@ const T = {
   noSecondRefresh:
     'token refresh › does not refresh again for a request that was sent before the refresh finished',
   logoutOnce: 'token refresh › logs out exactly once when the refresh token is rejected',
+  refreshAgain: 'token refresh › refreshes again when the new access token expires later',
+  retryOnce: 'token refresh › retries a refused request only once',
   firstRequest:
     'session persistence (cold start) › the first request after launch carries the saved access token',
   tokensDuringLoad:
     'session persistence (cold start) › keeps tokens that were saved while the session was still loading',
   signOut: 'session persistence (cold start) › signing out removes the saved session',
+  signOutWhileLoading:
+    'session persistence (cold start) › signing out while the session is still loading keeps the user signed out',
   filterChips: 'useApprovals › loads the list for each filter chip',
   slowResponse: 'useApprovals › ignores a slow response for a filter that is no longer selected',
   cancelOnUnmount: 'useApprovals › cancels the request when the screen goes away',
@@ -97,6 +101,10 @@ const T = {
   laterSuccess:
     'optimistic approve / reject › keeps a later success when an earlier request fails afterwards',
   previousStatus: 'optimistic approve / reject › a failed change returns the row to the status it had before',
+  afterSuccess:
+    'optimistic approve / reject › a failed change after an earlier success returns to the status that succeeded',
+  latestList:
+    'optimistic approve / reject › rolls back to the status from the latest list, not the first one',
   scrollToIndex: 'ApprovalsList › scrollToIndex lands on the right row (rows are separated by a 1 pt line)',
   expandedRow: 'ApprovalsList › keeps the expanded row expanded when a row above it disappears',
   rowComment: "ApprovalsList › keeps each row's comment with its own row",
@@ -160,9 +168,12 @@ const NEEDS: Record<string, Fix[]> = {
   [T.refreshOnce]: ['refresh'],
   [T.noSecondRefresh]: ['refresh'],
   [T.logoutOnce]: [],
+  [T.refreshAgain]: [],
+  [T.retryOnce]: [],
   [T.firstRequest]: ['clientReady'],
   [T.tokensDuringLoad]: ['storeReady'],
   [T.signOut]: [],
+  [T.signOutWhileLoading]: ['storeReady'],
   [T.filterChips]: ['abort'],
   [T.slowResponse]: ['abort'],
   [T.cancelOnUnmount]: [],
@@ -170,6 +181,8 @@ const NEEDS: Record<string, Fix[]> = {
   [T.rollbackOnlyFailed]: ['rollback'],
   [T.laterSuccess]: ['rollback'],
   [T.previousStatus]: ['rollback'],
+  [T.afterSuccess]: ['rollback'],
+  [T.latestList]: ['rollback'],
   [T.scrollToIndex]: ['layout'],
   [T.expandedRow]: ['expandedById'],
   [T.rowComment]: ['expandedById', 'keyById'],
@@ -184,6 +197,7 @@ const NEEDS: Record<string, Fix[]> = {
  */
 const ALSO_FAILS: Record<string, { applied: Fix[]; missing: Fix[] }> = {
   [T.retries]: { applied: ['storeReady'], missing: ['refresh', 'clientReady'] },
+  [T.refreshAgain]: { applied: ['storeReady'], missing: ['refresh', 'clientReady'] },
 };
 
 function withFixes(applied: Fix[]): SourceFile[] {

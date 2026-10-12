@@ -8,7 +8,7 @@
 const subtitle = 'Hands-On Coding Assessment';
 
 export const appConfig = {
-  platformName: 'Zycus CodeArena',
+  platformName: 'Zycus Talent Assessment',
   subtitle,
   companyName: 'Zycus',
   /** Full name of the assessment, used in sentences (login welcome line, consent notice). */

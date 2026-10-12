@@ -1,11 +1,11 @@
 import React from 'react';
 import { fireEvent, render } from '@codearena/test-utils';
-import { ApprovalsList, getItemLayout, ROW_HEIGHT, SEPARATOR_HEIGHT } from '../src/screens/ApprovalsList';
+import { ApprovalsList, getItemLayout } from '../src/screens/ApprovalsList';
 import type { Approval } from '../src/types';
 
 const make = (id: string): Approval => ({
   id,
-  title: `PO ${id}`,
+  title: 'Laptops for the Pune office', // the same on every row: rows are told apart by id
   amountMinor: 500_000,
   urgent: false,
   requestedBy: 'Meera',
@@ -16,10 +16,11 @@ const [A, B, C] = [make('A'), make('B'), make('C')];
 describe('ApprovalsList', () => {
   it('scrollToIndex lands on the right row (rows are separated by a 1 pt line)', () => {
     expect(getItemLayout([], 0)).toMatchObject({ offset: 0, index: 0 });
-    expect(getItemLayout([], 7)).toMatchObject({ offset: 7 * (ROW_HEIGHT + SEPARATOR_HEIGHT), index: 7 });
+    // The design: 72 pt rows with a 1 pt line between them.
+    expect(getItemLayout([], 7)).toMatchObject({ offset: 7 * 73, index: 7 });
     // A cell's length may or may not count the separator below it: both are correct.
     for (const index of [0, 7]) {
-      expect([ROW_HEIGHT, ROW_HEIGHT + SEPARATOR_HEIGHT]).toContain(getItemLayout([], index).length);
+      expect([72, 73]).toContain(getItemLayout([], index).length);
     }
   });
 

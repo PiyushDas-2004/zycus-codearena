@@ -11,25 +11,29 @@ describe('useCountdown', () => {
 
   it('counts down every second and closes at zero', () => {
     const { result } = renderHook(() => useCountdown(T0 + 3_000));
-    expect(result.current).toEqual({ remaining: 3_000, closed: false });
+    expect(result.current).toMatchObject({ remaining: 3_000, closed: false });
     act(() => jest.advanceTimersByTime(1_000));
     expect(result.current.remaining).toBe(2_000);
     act(() => jest.advanceTimersByTime(2_000));
-    expect(result.current).toEqual({ remaining: 0, closed: true });
+    expect(result.current).toMatchObject({ remaining: 0, closed: true });
   });
 
   it('picks up an extension of the closing time immediately', () => {
-    const { result, rerender } = renderHook(({ closesAt }: { closesAt: number }) => useCountdown(closesAt), {
+    const { result, rerender, unmount } = renderHook(({ closesAt }: { closesAt: number }) => useCountdown(closesAt), {
       initialProps: { closesAt: T0 + 30_000 },
     });
     act(() => jest.advanceTimersByTime(25_000));
     expect(result.current.remaining).toBe(5_000);
 
     // A bid in the final minute extended the auction by 2 minutes.
+    const timers = jest.getTimerCount();
     rerender({ closesAt: T0 + 150_000 });
     expect(result.current.remaining).toBe(125_000);
+    expect(jest.getTimerCount()).toBe(timers); // the old timer was stopped, not left running
     act(() => jest.advanceTimersByTime(10_000));
-    expect(result.current).toEqual({ remaining: 115_000, closed: false });
+    expect(result.current).toMatchObject({ remaining: 115_000, closed: false });
+    unmount();
+    expect(jest.getTimerCount()).toBe(0);
   });
 
   it('is right again as soon as the app returns from the background', () => {

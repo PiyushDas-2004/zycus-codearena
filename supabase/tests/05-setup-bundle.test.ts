@@ -137,7 +137,7 @@ describe('SQL Editor database script', () => {
   });
 
   it('updates a question installed at an older version, and leaves the same version alone', async () => {
-    const Q = '9249d0ed-6c2c-4ea4-80f9-48645dbf737a'; // rn-approvals-inbox, seeded at version 2
+    const Q = '9249d0ed-6c2c-4ea4-80f9-48645dbf737a'; // rn-approvals-inbox
     db = await createTestDb({ migrations: false });
     await runScripts(db);
     const files = async () =>
@@ -148,6 +148,11 @@ describe('SQL Editor database script', () => {
         )
       ).rows;
     const current = await files();
+    const seeded = await db.query<{ version: number }>(`select version from public.questions where id = $1`, [
+      Q,
+    ]);
+    const seededVersion = seeded.rows[0]?.version;
+    expect(seededVersion).toBeGreaterThan(1);
 
     // As installed by the previous release: version 1, older content, a file since removed.
     await db.exec(`
@@ -164,7 +169,11 @@ describe('SQL Editor database script', () => {
          from public.questions q join public.question_solutions s on s.question_id = q.id where q.id = $1`,
       [Q],
     );
-    expect(q.rows[0]).toMatchObject({ version: 2, title: expect.not.stringMatching(/Old/), rubric: 6 });
+    expect(q.rows[0]).toMatchObject({
+      version: seededVersion,
+      title: expect.not.stringMatching(/Old/),
+      rubric: 6,
+    });
     expect(q.rows[0]?.notes).not.toBe('old notes');
 
     // Same version: an edit made since stays.

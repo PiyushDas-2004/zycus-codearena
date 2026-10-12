@@ -1,4 +1,4 @@
-# Zycus CodeArena
+# Zycus Talent Assessment
 
 **Hands-On Coding Assessment** — Zycus's in-house, zero-cost, proctored coding-assessment platform.
 
@@ -30,6 +30,7 @@ npm run check        # lint + format + seed check + all tests + type-check + bui
 | `npm run sql:copy` | Puts those scripts on the clipboard one at a time, for pasting into the SQL Editor (`-- 3` starts at script 3, `-- --list` lists them) |
 | `npm run local:db` / `dev:local` / `local:worker` | A local stand-in for Supabase (the real migrations and seed in PGlite, test staff accounts in `scripts/local-stack/seed.json`), the app against it, and the coding-assistant worker against it: end-to-end tests and demos without touching the real project |
 | `/admin` | The admin portal: invite candidates, follow tests live, reopen tests, review results. Setup and use: [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md) |
+| Deploying | `npm run check`, then upload `dist/` in the Cloudflare Pages dashboard: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 | `npm run assistant:worker` | Runs the coding assistant's worker on a laptop inside the Zycus network while assessments run (see [docs/AI_ASSISTANT_SETUP.md](docs/AI_ASSISTANT_SETUP.md)) |
 | `npm run models:fetch` | Downloads and verifies the face-detection model into `public/models/` (once; the file is committed) |
 

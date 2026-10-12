@@ -1,6 +1,6 @@
 # Admin portal guide
 
-The admin portal is at **`/admin`** on the CodeArena site (on your laptop: `npm run dev`, then
+The admin portal is at **`/admin`** on the site (<https://zycus-talent-assessment.pages.dev/admin>; on your laptop: `npm run dev`, then
 <http://localhost:5173/admin>). Zycus staff use it to invite candidates, follow tests live, review
 results and act on a test. Every action is checked by the database and written to the audit log.
 

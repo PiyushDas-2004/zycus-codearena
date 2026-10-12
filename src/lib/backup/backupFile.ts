@@ -71,7 +71,7 @@ export async function createBackup(
 
 /** Used by the admin import (Phase 4). Throws if the key, session or file was tampered with. */
 export async function openBackup(envelope: BackupEnvelope, keyB64: string): Promise<BackupContents> {
-  if (envelope.format !== BACKUP_FORMAT) throw new Error('Not a CodeArena backup file');
+  if (envelope.format !== BACKUP_FORMAT) throw new Error('Not an assessment backup file');
   const key = await importKey(keyB64);
   const plain = await crypto.subtle.decrypt(
     {
@@ -98,7 +98,7 @@ export function downloadBackup(envelope: BackupEnvelope, candidateName: string):
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `codearena-backup-${safeName}-${envelope.session_id.slice(0, 8)}.codearena-backup`;
+  a.download = `zycus-assessment-backup-${safeName}-${envelope.session_id.slice(0, 8)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();

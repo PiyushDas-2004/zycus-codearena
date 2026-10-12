@@ -2,7 +2,7 @@
   "format": "zycus-codearena/question@1",
   "id": "9249d0ed-6c2c-4ea4-80f9-48645dbf737a",
   "slug": "rn-approvals-inbox",
-  "version": 2,
+  "version": 3,
   "title": "Approvals Inbox: session, networking and list state (React Native)",
   "category": "React Native debugging",
   "role_tags": ["lead-react-native-developer", "react-native-developer"],

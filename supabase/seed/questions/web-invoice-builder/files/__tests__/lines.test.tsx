@@ -1,6 +1,6 @@
 import { fireEvent, getConsoleErrors, screen, textContent } from '@codearena/test-utils';
 import { initialState, invoiceReducer, type InvoiceState } from '../src/state/invoiceReducer';
-import { PO_LINES, openPo, typeInto, valueOf } from './support/fakeApi';
+import { PO_LINES, createFakeApi, openPo, typeInto, valueOf } from './support/fakeApi';
 
 const duplicateKeyWarnings = () => getConsoleErrors().filter((m) => /same key/i.test(m));
 const gross = () => textContent(screen.getByTestId('total-gross'));
@@ -74,6 +74,22 @@ describe('totals and undo', () => {
 
     expect(textContent(screen.getByTestId('total-1'))).toBe('₹1,000.00');
     expect(gross()).toBe('₹9,967.64');
+  });
+
+  it('keeps two PO lines with the same SKU apart', async () => {
+    const api = createFakeApi();
+    const [paper] = PO_LINES;
+    api.getPoLines.mockImplementation(async () => [
+      { ...paper! },
+      { ...paper!, description: 'Copier paper A4 (second delivery)' },
+    ]);
+    await openPo(api);
+
+    typeInto('qty-2', '7');
+
+    expect(valueOf('qty-1')).toBe(10);
+    expect(valueOf('qty-2')).toBe(7);
+    expect(duplicateKeyWarnings()).toEqual([]);
   });
 
   it('undo puts back the previous quantity and totals', async () => {

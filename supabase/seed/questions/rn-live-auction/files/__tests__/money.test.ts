@@ -10,6 +10,8 @@ describe('bid rules', () => {
       [0.2, 0.3, 0.1, true],
       [0.21, 0.3, 0.1, false],
       [1234.5, 1234.6, 0.1, true],
+      [255.93, 256.03, 0.1, true],
+      [0.11, 0.21, 0.1, true],
     ];
     for (const [bid, best, dec, valid] of cases) {
       expect(`${bid} against ${best}: ${isValidBid(bid, best, dec)}`).toBe(`${bid} against ${best}: ${valid}`);

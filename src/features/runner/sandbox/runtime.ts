@@ -21,6 +21,16 @@ g.IS_REACT_ACT_ENVIRONMENT = true;
 g.IS_REACT_NATIVE_TEST_ENVIRONMENT = true;
 g.__DEV__ = true;
 
+// No DOM, but code that guards the page (window.addEventListener('beforeunload', …)) mustn't
+// crash: `window` is the global, with no-op listeners where there are none.
+if (typeof g.window === 'undefined') g.window = g;
+for (const name of ['addEventListener', 'removeEventListener']) {
+  if (typeof g[name] !== 'function') g[name] = () => undefined;
+}
+// As in React Native, and on the timers the tests control (fake timers drive it too).
+g.requestAnimationFrame = (cb: (time: number) => void) => setTimeout(() => cb(Date.now()), 16);
+g.cancelAnimationFrame = (id: ReturnType<typeof setTimeout>) => clearTimeout(id);
+
 // ── Console capture ───────────────────────────────────────────────────────
 let logs: string[] = [];
 const MAX_LOGS = 200;

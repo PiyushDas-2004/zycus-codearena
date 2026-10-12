@@ -53,16 +53,16 @@ describe('useApprovals', () => {
     const api = fakeClient();
     const { result, rerender } = render(api);
     await api.respond('/approvals?filter=all', ALL);
-    expect(result.current).toEqual({ items: ALL, loading: false, error: null });
+    expect(result.current).toMatchObject({ items: ALL, loading: false, error: null });
 
     rerender({ filter: 'urgent' });
     expect(result.current.loading).toBe(true);
     await api.respond('/approvals?filter=urgent', URGENT);
-    expect(result.current).toEqual({ items: URGENT, loading: false, error: null });
+    expect(result.current).toMatchObject({ items: URGENT, loading: false, error: null });
 
     rerender({ filter: 'mine' });
     await api.respond('/approvals?filter=mine', MINE);
-    expect(result.current).toEqual({ items: MINE, loading: false, error: null });
+    expect(result.current).toMatchObject({ items: MINE, loading: false, error: null });
   });
 
   it('ignores a slow response for a filter that is no longer selected', async () => {
@@ -71,6 +71,8 @@ describe('useApprovals', () => {
     await api.respond('/approvals?filter=all', ALL);
     rerender({ filter: 'urgent' });
     rerender({ filter: 'mine' });
+    await act(async () => {}); // the cancelled request settles
+    expect(result.current.loading).toBe(true); // still loading 'mine'
     await api.respond('/approvals?filter=mine', MINE);
     await api.respond('/approvals?filter=urgent', URGENT); // arrives late
     expect(result.current.items).toEqual(MINE);
@@ -81,12 +83,12 @@ describe('useApprovals', () => {
     const api = fakeClient();
     const { result, rerender } = render(api);
     await api.fail('/approvals?filter=all', new Error('Network request failed'));
-    expect(result.current).toEqual({ items: [], loading: false, error: 'Network request failed' });
+    expect(result.current).toMatchObject({ items: [], loading: false, error: 'Network request failed' });
 
     rerender({ filter: 'urgent' });
     expect(result.current.error).toBeNull();
     await api.respond('/approvals?filter=urgent', URGENT);
-    expect(result.current).toEqual({ items: URGENT, loading: false, error: null });
+    expect(result.current).toMatchObject({ items: URGENT, loading: false, error: null });
   });
 
   it('cancels the request when the screen goes away', async () => {

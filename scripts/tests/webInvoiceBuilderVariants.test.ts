@@ -169,9 +169,12 @@ const REQUIRES: Record<string, Bug[]> = {
   // callback (1); with colliding ids (4) every line gets the typed quantity.
   'autosave › saves quantity edits, once per burst of typing, with the latest values': ['1', '4', '5'],
   'autosave › never saves after the invoice is submitted': ['2b'],
+  'autosave › never saves while a slow submit is still on its way': ['2b'],
+  'autosave › a search in the PO picker does not cancel a pending save': ['1', '5'],
   'autosave › never saves after the builder is closed': ['2a'],
   'autosave › does not save before a PO is chosen': [],
   'PO search › sends one request when the supplier pauses typing': ['3'],
+  'PO search › waits until the supplier stops typing, however long they type': ['3'],
   'PO search › waits for the pause before searching': [],
   'PO search › lists matches; choosing one imports its lines': [],
   'invoice lines › gives every line its own id, even when several are created at once': ['4'],
@@ -182,10 +185,13 @@ const REQUIRES: Record<string, Bug[]> = {
   'totals and undo › shows the totals of the imported PO': [],
   // Totals are memoised on the lines array (5); with colliding ids (4) the edit hits every line.
   'totals and undo › updates the totals on every edit': ['4', '5'],
+  'totals and undo › keeps two PO lines with the same SKU apart': ['4'],
   'totals and undo › undo puts back the previous quantity and totals': ['5'],
   'totals and undo › an edit never changes the version that Undo returns to': ['5'],
   'price field › keeps the decimal point while the supplier types ₹12.50': ['6a'],
   'price field › can be cleared and typed again': ['6a'],
+  'price field › shows exactly what was typed while typing (₹12.0, ₹0.05)': ['6a'],
+  'price field › shows the restored price after Undo': ['5'],
   'price field › accepts a pasted amount with digit grouping': ['6b'],
   'parseRupees › reads plain, grouped and ₹ amounts': ['6b'],
   'parseRupees › rejects anything that is not a valid amount': ['6b'],
@@ -1254,7 +1260,7 @@ process.stdout.write('\\n@@OUTCOME@@' + JSON.stringify(outcome) + '\\n', () => p
  */
 function runIsolated(
   files: SourceFile[],
-  { timeoutMs = 4_000, killAfterMs = 25_000 } = {},
+  { timeoutMs = 4_000, killAfterMs = 60_000 } = {},
 ): Promise<Isolated> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, ['--input-type=module', '-e', CHILD], {
@@ -1333,7 +1339,8 @@ describe.concurrent('broken code is reported, never hangs', () => {
     const files = edit(solution, {
       [DATES]: (src) => `${src}\nexport const notANumber: number = 'twelve';\n`,
     });
-    const o = await runIsolated(files);
+    // A full run: as long as the tests need on a busy machine (the default is for hang tests).
+    const o = await runIsolated(files, { timeoutMs: 20_000 });
     expect(o.type).toBe('done');
     if (o.type === 'done') expect(o.results.every((r) => r.status === 'passed')).toBe(true);
     expect(typecheckFiles(files).map((d) => `${d.path}:${d.line}`)).toEqual([`${DATES}:20`]);

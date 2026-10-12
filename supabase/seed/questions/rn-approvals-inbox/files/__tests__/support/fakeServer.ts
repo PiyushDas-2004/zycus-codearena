@@ -11,6 +11,8 @@ export function createFakeServer(options: {
   refreshFails?: boolean;
   /** How long a refresh takes (a slow network can take seconds). */
   refreshMs?: number;
+  /** Paths that answer 401 even with a valid access token (e.g. no permission). */
+  forbidden?: string[];
 }) {
   let valid: Tokens = { accessToken: options.access, refreshToken: options.refresh };
   let generation = 0;
@@ -32,7 +34,11 @@ export function createFakeServer(options: {
     const path = url.replace(options.baseUrl, '');
     const auth = init.headers?.Authorization;
     calls.push({ path, auth });
-    const status = auth === `Bearer ${valid.accessToken}` ? 200 : 401;
+    if (calls.filter((c) => c.path === path).length > 10) {
+      throw new Error(`${path} was requested more than 10 times (retrying without a limit?)`);
+    }
+    const forbidden = options.forbidden?.includes(path) ?? false;
+    const status = !forbidden && auth === `Bearer ${valid.accessToken}` ? 200 : 401;
     if (holding.has(path)) {
       await new Promise<void>((resolve) => held.set(path, [...(held.get(path) ?? []), resolve]));
     }
@@ -51,5 +57,17 @@ export function createFakeServer(options: {
       held.get(path)?.forEach((resolve) => resolve());
       held.delete(path);
     },
+    /** The current access token expires (the refresh token stays valid). */
+    expire: () => {
+      valid = { ...valid, accessToken: `expired-${generation}` };
+    },
   };
+}
+
+/**
+ * With fake timers: moves time forward in small steps and lets promises settle in between, so
+ * chains of timers and awaits run as they would in real time.
+ */
+export async function elapse(ms: number, step = 100) {
+  for (let t = 0; t < ms; t += step) await jest.advanceTimersByTimeAsync(step);
 }

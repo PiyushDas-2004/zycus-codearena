@@ -158,15 +158,26 @@ function fire(el: ReactTestInstance, event: string, ...args: any[]) {
   return value;
 }
 
-const syntheticEvent = (el: ReactTestInstance, extra: Record<string, unknown> = {}) => ({
-  preventDefault() {},
-  stopPropagation() {},
-  persist() {},
-  target: { ...el.props, ...((extra.target as object) ?? {}) },
-  currentTarget: el.props,
-  nativeEvent: {},
-  ...extra,
-});
+/**
+ * A React DOM-like event. `target` and `currentTarget` are the same element: its props with the
+ * changes applied (e.g. the new `value`), and `valueAsNumber` as an <input type="number"> has it.
+ */
+const syntheticEvent = (el: ReactTestInstance, extra: Record<string, unknown> = {}) => {
+  const { target: changes, ...rest } = extra as { target?: Record<string, unknown> };
+  const element: Record<string, unknown> = { ...el.props, ...changes };
+  const value = element.value;
+  const numeric = element.type === 'number' || element.type === 'range';
+  element.valueAsNumber = numeric && value !== '' && value != null ? Number(value) : NaN;
+  return {
+    preventDefault() {},
+    stopPropagation() {},
+    persist() {},
+    nativeEvent: {},
+    ...rest,
+    target: element,
+    currentTarget: element,
+  };
+};
 
 export const fireEvent = Object.assign(fire, {
   press: (el: ReactTestInstance) => fire(el, 'press', { nativeEvent: {} }),

@@ -77,12 +77,28 @@ export const callsOn = (source: string, receiver: string, name: string) =>
 /** Calls `.<name>(` on anything in some code. */
 export const calls = (source: string, name: string) => new RegExp(`\\.\\s*${name}\\s*\\(`).test(source);
 
+/** Calls of a method of the same class: `name(`, `this.name(` or `this::name`. */
+const callOf = (name: string) =>
+  new RegExp(`(?<![\\w.$])${name}\\s*\\(|\\bthis\\s*\\.\\s*${name}\\s*\\(|\\bthis\\s*::\\s*${name}\\b`, 'g');
+
 /**
- * A method's body followed by the bodies of the methods of its own class that it calls (directly,
- * on `this`, or through them), so moving code into a helper method changes nothing. Calls on other
- * objects (including this class's own proxy) aren't followed.
+ * A method's body with the bodies of the methods of its own class that it calls written in where
+ * they are called (directly, on `this`, or through them), so moving code into a helper method
+ * changes nothing, order included. Calls on other objects (including this class's own proxy) aren't
+ * followed.
  */
-export const withHelpers = (t: JavaType, m: JavaMethod) => [m, ...helpersOf(t, m)].map(body).join('\n');
+export function withHelpers(t: JavaType, m: JavaMethod, seen: string[] = [m.name]): string {
+  let source = body(m);
+  for (const name of new Set(t.methods.map((x) => x.name))) {
+    if (seen.includes(name) || !callOf(name).test(source)) continue;
+    const inner = t.methods
+      .filter((x) => x.name === name)
+      .map((x) => withHelpers(t, x, [...seen, name]))
+      .join('\n');
+    source = source.replace(callOf(name), (call) => `{${inner}}\n${call}`);
+  }
+  return source;
+}
 
 /** The methods of its own class that a method calls, directly or through them (see withHelpers). */
 export function helpersOf(t: JavaType, m: JavaMethod): JavaMethod[] {
@@ -91,20 +107,96 @@ export function helpersOf(t: JavaType, m: JavaMethod): JavaMethod[] {
   for (const current of found) {
     const source = body(current);
     for (const other of t.methods) {
-      const called = new RegExp(
-        `(?<![\\w.$])${other.name}\\s*\\(|\\bthis\\s*\\.\\s*${other.name}\\s*\\(|\\bthis\\s*::\\s*${other.name}\\b`,
-      );
-      if (!found.includes(other) && called.test(source)) found.push(other);
+      if (!found.includes(other) && callOf(other.name).test(source)) found.push(other);
     }
   }
   return found.slice(1);
 }
+
+/** Code with the contents of its string and text-block literals blanked: text is not code. */
+export const noStrings = (source: string) =>
+  source.replace(/"""[\s\S]*?"""|"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/g, (s) => (s.startsWith('"') ? '""' : "''"));
 
 /** A type you can edit, by its simple or qualified name (as a field's type gives it). */
 export const editableType = (name: string) => {
   const simple = name.replace(/<.*$/, '').split('.').pop();
   return editableTypes.find((t) => t.name === simple) ?? null;
 };
+
+/**
+ * The editable classes a field of this type injects: the type itself, or, for an interface, the
+ * classes implementing it. `ObjectProvider<T>`, `ObjectFactory<T>` and `Provider<T>` inject T.
+ */
+export function beansFor(fieldType: string): JavaType[] {
+  const inner = /^(?:ObjectProvider|ObjectFactory|Provider|Supplier)\s*<\s*([\w.]+)\s*>/.exec(fieldType)?.[1];
+  const t = editableType(inner ?? fieldType);
+  if (!t) return [];
+  if (t.kind !== 'interface') return [t];
+  return editableTypes.filter((x) => x.kind === 'class' && x.implements.some((i) => editableType(i) === t));
+}
+
+/** A call of `method` on a field: `field.method(`, or through a provider (`field.getObject().method(`). */
+export const callsThrough = (source: string, field: string, method: string) =>
+  new RegExp(
+    `\\b${field}\\s*\\.\\s*(?:(?:getObject|getIfAvailable|getIfUnique|get)\\s*\\(\\s*\\)\\s*\\.\\s*)?${method}\\s*\\(`,
+  ).test(source);
+
+/** The `static final int` constants of a class with value 0 or 1, by name. */
+export const smallConstants = (t: JavaType) =>
+  new Map(
+    t.fields.flatMap((f) => {
+      const v = /=\s*([01])\s*;?$/.exec(f.text)?.[1];
+      return f.modifiers.includes('final') && /^(int|long|Integer)$/.test(f.type) && v ? [[f.name, v]] : [];
+    }),
+  );
+
+/** Code with those constants replaced by their values (`page < FIRST_PAGE` reads `page < 1`). */
+export const withConstants = (source: string, constants: Map<string, string>) =>
+  [...constants].reduce((s, [name, v]) => s.replace(new RegExp(`(?<![\\w.$])${name}\\b`, 'g'), v), source);
+
+/** The text from `open` (an opening bracket) to its matching close, both excluded. */
+function enclosed(source: string, open: number): string {
+  const pairs: Record<string, string> = { '(': ')', '{': '}' };
+  const o = source[open] ?? '';
+  const c = pairs[o];
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === o) depth++;
+    else if (source[i] === c && --depth === 0) return source.slice(open + 1, i);
+  }
+  return source.slice(open + 1);
+}
+
+/**
+ * Each `if (<condition>)` whose branch throws: the condition (with or without braces, the throw
+ * anywhere in the braced block).
+ */
+export function conditionsThatThrow(source: string): string[] {
+  const out: string[] = [];
+  for (const m of source.matchAll(/\bif\s*\(/g)) {
+    const start = (m.index ?? 0) + m[0].length - 1;
+    const condition = enclosed(source, start);
+    const after = source.slice(start + condition.length + 2);
+    const branch = /^\s*\{/.test(after) ? enclosed(after, after.indexOf('{')) : after.split(';')[0] ?? '';
+    if (/\bthrow\b/.test(branch)) out.push(condition);
+  }
+  return out;
+}
+
+/** The bodies of the loops in some code (`for`/`while` blocks, `.forEach(…)` and `.map(…)` calls). */
+export function loopBodies(source: string): string[] {
+  const out: string[] = [];
+  for (const m of source.matchAll(/\b(for|while)\s*\(/g)) {
+    const head = (m.index ?? 0) + m[0].length - 1;
+    const rest = source.slice(head + enclosed(source, head).length + 2);
+    if (/^\s*\{/.test(rest)) out.push(enclosed(rest, rest.indexOf('{')));
+    else out.push(rest.split(';')[0] ?? '');
+  }
+  for (const m of source.matchAll(/\.\s*(forEach|map|peek)\s*\(/g)) {
+    out.push(enclosed(source, (m.index ?? 0) + m[0].length - 1));
+  }
+  return out;
+}
 
 /** `@Transactional` that starts or joins a transaction (not NOT_SUPPORTED, NEVER, SUPPORTS, MANDATORY). */
 export const opensTransaction = (tx: JavaAnnotation | null) =>
@@ -135,6 +227,11 @@ export function templatesOf(t: JavaType): Template[] {
       readOnly: new RegExp(`\\b${f.name}\\s*\\.\\s*setReadOnly\\s*\\(\\s*true`).test(t.text),
     }));
 }
+
+/** A repository or EntityManager lookup that locks the row for writing, in some code. */
+export const locksRow = (source: string, lockingMethods: string[]) =>
+  lockingMethods.some((name) => new RegExp(`\\.\\s*${name}\\s*\\(`).test(source)) ||
+  /\.\s*(find|lock|refresh)\s*\([^;]*PESSIMISTIC_WRITE/.test(source);
 
 /** Code runs a callback in this template. */
 export const usesTemplate = (source: string, template: Template) =>

@@ -29,5 +29,7 @@ a PO. They search for the PO, import its lines, adjust quantities and prices, an
 - `__tests__/` is **read-only** and describes the expected behaviour. Use **Run tests** (they use
   fake timers).
 - Don't special-case the tests: reviewers read your changes and run more tests.
+- The tests render without a browser DOM (no `document`), and inputs are read through their
+  `value` prop, so keep them controlled (`value` + `onChange`).
 
 *Time guide: about 30 minutes.*

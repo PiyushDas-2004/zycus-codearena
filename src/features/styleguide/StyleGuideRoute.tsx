@@ -114,7 +114,7 @@ export default function StyleGuideRoute() {
       <main className="mx-auto flex max-w-6xl flex-col gap-12 px-8 py-10">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.12em] text-muted">Design system</p>
-          <h1 className="mt-1 text-4xl font-light text-title">CodeArena style guide</h1>
+          <h1 className="mt-1 text-4xl font-light text-title">Style guide</h1>
           <p className="mt-2 max-w-2xl text-muted">
             Every color comes from <code className="font-mono text-sm">src/design/tokens.css</code>. Sources
             for each value are listed in BRAND_SOURCES.md.

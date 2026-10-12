@@ -18,6 +18,22 @@ describe('PO search', () => {
     await flushPromises(); // let the results render
   });
 
+  it('waits until the supplier stops typing, however long they type', async () => {
+    jest.useFakeTimers();
+    const api = createFakeApi();
+    render(<InvoiceBuilder api={api} />);
+
+    for (const value of ['P', 'PO', 'PO-', 'PO-2', 'PO-20']) {
+      typeInto('po-search', value);
+      act(() => jest.advanceTimersByTime(SEARCH_DEBOUNCE_MS - 50)); // a slow typist
+    }
+    expect(api.searchPos).not.toHaveBeenCalled();
+    act(() => jest.advanceTimersByTime(50));
+    expect(api.searchPos).toHaveBeenCalledTimes(1);
+    expect(api.searchPos).toHaveBeenCalledWith('PO-20');
+    await flushPromises();
+  });
+
   it('waits for the pause before searching', async () => {
     jest.useFakeTimers();
     const api = createFakeApi();

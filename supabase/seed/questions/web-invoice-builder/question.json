@@ -2,7 +2,7 @@
   "format": "zycus-codearena/question@1",
   "id": "f1eb4c67-f593-4b9b-9087-4e6bdd1eed13",
   "slug": "web-invoice-builder",
-  "version": 2,
+  "version": 3,
   "title": "Supplier Invoice Builder: autosave, identity and input state (React web)",
   "category": "Front-end debugging",
   "role_tags": [

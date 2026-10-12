@@ -122,7 +122,7 @@ export function AccessPage({
         <EmptyState
           icon={<ShieldAlert className="size-6" aria-hidden="true" />}
           title="Access not granted"
-          description="You signed in, but your account isn’t on the CodeArena staff list. Ask a Super Admin to add your Zycus email."
+          description="You signed in, but your account isn’t on the staff list. Ask a Super Admin to add your Zycus email."
           action={
             <Button variant="secondary" onClick={() => void signOut()}>
               Use another account

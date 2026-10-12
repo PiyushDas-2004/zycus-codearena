@@ -29,6 +29,20 @@ describe('live bid feed', () => {
     expect(first).not.toHaveBeenCalled();
   });
 
+  it('moves its listener to a new socket (after a reconnect)', () => {
+    const before = createAuctionSocket();
+    const after = createAuctionSocket();
+    const onBid = jest.fn();
+    const { rerender } = renderHook(({ socket }: { socket: typeof before }) => useBidFeed(socket, onBid), {
+      initialProps: { socket: before },
+    });
+    rerender({ socket: after });
+    expect(before.listenerCount('bid')).toBe(0);
+    expect(after.listenerCount('bid')).toBe(1);
+    act(() => after.emit('bid', bid));
+    expect(onBid).toHaveBeenCalledTimes(1);
+  });
+
   it('unsubscribes when the screen loses focus and when it unmounts', () => {
     const socket = createAuctionSocket();
     const { unmount } = renderHook(() => useBidFeed(socket, jest.fn()));

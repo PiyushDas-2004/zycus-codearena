@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
+import { appConfig } from '@/config/app.config';
 import { LoadingState } from '@/design/components';
 import { useAdminSession } from './adminSession';
 import { AdminShell } from './components/AdminShell';
@@ -24,7 +25,7 @@ export default function AdminRoute() {
   }, [init]);
 
   useEffect(() => {
-    document.title = 'Admin · Zycus CodeArena';
+    document.title = `Admin · ${appConfig.platformName}`;
   }, []);
 
   if (status === 'loading') return <LoadingState label="Opening the admin portal…" className="min-h-dvh" />;

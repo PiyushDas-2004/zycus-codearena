@@ -59,4 +59,25 @@ describe('optimistic approve / reject', () => {
     await flushPromises();
     expect(statusOf(result.current.items, 'A')).toMatchObject({ status: 'APPROVED', error: expect.any(String) });
   });
+
+  it('a failed change after an earlier success returns to the status that succeeded', async () => {
+    const { api, reply } = serverWithManualReplies();
+    const { result } = renderHook(() => useApprovalDecisions(api, [make('A')]));
+    act(() => void result.current.decide('A', 'APPROVED'));
+    await act(async () => reply('/approvals/A/approve').resolve({}));
+    act(() => void result.current.decide('A', 'REJECTED'));
+    await act(async () => reply('/approvals/A/reject').reject(new Error('409 Conflict')));
+    await flushPromises();
+    expect(statusOf(result.current.items, 'A')).toMatchObject({ status: 'APPROVED', error: expect.any(String) });
+  });
+
+  it('rolls back to the status from the latest list, not the first one', async () => {
+    const { api, reply } = serverWithManualReplies();
+    const { result } = renderHook(() => useApprovalDecisions(api, [make('A')]));
+    act(() => result.current.load([make('A', 'APPROVED')])); // reloaded: approved elsewhere
+    act(() => void result.current.decide('A', 'REJECTED'));
+    await act(async () => reply('/approvals/A/reject').reject(new Error('timeout')));
+    await flushPromises();
+    expect(statusOf(result.current.items, 'A')).toMatchObject({ status: 'APPROVED', error: expect.any(String) });
+  });
 });

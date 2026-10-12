@@ -204,7 +204,11 @@ try {
 
 /** Runs the question's test files in the sandbox runtime (Node vm in a worker thread, real timers). */
 export async function runSandboxTests(files: SourceFile[], timeoutMs = 30_000): Promise<SandboxOutcome> {
-  runtime ??= bundleSandboxRuntime({ minify: false });
+  // SANDBOX_RUNTIME_FILE: run with a given runtime file, e.g. the one downloaded from the live site.
+  const runtimeFile = process.env.SANDBOX_RUNTIME_FILE;
+  runtime ??= runtimeFile
+    ? Promise.resolve(readFileSync(runtimeFile, 'utf8'))
+    : bundleSandboxRuntime({ minify: false });
   const modules: SandboxModule[] = [];
   const syntaxErrors: { path: string; line: number; message: string }[] = [];
   for (const f of files) {

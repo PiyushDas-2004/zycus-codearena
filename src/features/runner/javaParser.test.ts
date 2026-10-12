@@ -128,5 +128,5 @@ describe('parseJava', () => {
       ok: false,
       error: { line: 1, message: /^Syntax error/ },
     });
-  });
+  }, 30_000); // loads and builds the real parser
 });

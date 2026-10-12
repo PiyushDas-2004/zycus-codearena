@@ -1,5 +1,5 @@
 /**
- * The invitation email the recruiter sends from their own mailbox (Outlook): CodeArena doesn't send
+ * The invitation email the recruiter sends from their own mailbox (Outlook): the platform doesn't send
  * email itself, so nothing goes out on its own and the message comes from a Zycus person.
  */
 import { firstName, formatDateTime } from './format';
@@ -12,7 +12,7 @@ export interface InvitationDetails {
   durationMinutes: number;
   validFromMs: number;
   validUntilMs: number;
-  /** The candidate sign-in page, e.g. https://codearena.zycus.com/ */
+  /** The candidate sign-in page, e.g. https://zycus-talent-assessment.pages.dev/ */
   link: string;
   senderName: string;
 }
