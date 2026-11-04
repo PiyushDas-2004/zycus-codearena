@@ -123,6 +123,11 @@
   --zy-radius-xl: 16px;
   --zy-radius-pill: 50px; /* zycus.com CTA buttons */
 
+  /* ── Candidate sign-in page (space background; src/features/candidate/loginPage.css) ─ */
+  --space-black: #000000; /* DERIVED: pitch-black space */
+  /* DERIVED: footer text on space, 14.1:1 on black and ≥ 9:1 on the brightest part of the Milky Way. */
+  --text-on-scene-muted: #c5d2e6;
+
   color-scheme: light;
 }
 
