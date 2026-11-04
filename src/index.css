@@ -1,0 +1,218 @@
+@import 'tailwindcss';
+@import './design/tokens.css';
+
+/*
+ * Map Tailwind utilities onto the design tokens. The default Tailwind palette is removed
+ * (`--color-*: initial`) so only Zycus tokens can be used — e.g. `bg-primary`, `text-muted`,
+ * `border-border`, `bg-navy-900`. Spacing follows Tailwind's 4px unit; use even steps (2, 4, 6, 8…)
+ * to stay on the 8px grid.
+ */
+@theme inline {
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: var(--zy-white);
+
+  --color-navy-950: var(--zy-navy-950);
+  --color-navy-900: var(--zy-navy-900);
+  --color-navy-800: var(--zy-navy-800);
+  --color-navy-700: var(--zy-navy-700);
+  --color-blue-700: var(--zy-blue-700);
+  --color-blue-650: var(--zy-blue-650);
+  --color-blue-600: var(--zy-blue-600);
+  --color-blue-500: var(--zy-blue-500);
+  --color-blue-400: var(--zy-blue-400);
+  --color-blue-200: var(--zy-blue-200);
+  --color-blue-100: var(--zy-blue-100);
+  --color-blue-50: var(--zy-blue-50);
+  --color-cyan-500: var(--zy-cyan-500);
+  --color-teal-400: var(--zy-teal-400);
+  --color-gold-500: var(--zy-gold-500);
+  --color-green-500: var(--zy-green-500);
+  --color-gray-25: var(--zy-gray-25);
+  --color-gray-50: var(--zy-gray-50);
+  --color-gray-75: var(--zy-gray-75);
+  --color-gray-100: var(--zy-gray-100);
+  --color-gray-200: var(--zy-gray-200);
+  --color-gray-300: var(--zy-gray-300);
+  --color-gray-400: var(--zy-gray-400);
+  --color-slate-600: var(--zy-slate-600);
+  --color-gray-800: var(--zy-gray-800);
+  --color-gray-900: var(--zy-gray-900);
+
+  --color-surface: var(--surface);
+  --color-surface-app: var(--surface-app);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-tint: var(--surface-tint);
+  --color-surface-selected: var(--surface-selected);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-text: var(--text);
+  --color-strong: var(--text-strong);
+  --color-muted: var(--text-muted);
+  --color-title: var(--text-title);
+  --color-link: var(--text-link);
+  --color-inverse: var(--text-inverse);
+  --color-on-primary: var(--text-on-primary);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-warning: var(--warning);
+  --color-warning-fill: var(--warning-fill);
+  --color-warning-surface: var(--warning-surface);
+  --color-danger: var(--danger);
+  --color-danger-border: var(--danger-border);
+  --color-danger-surface: var(--danger-surface);
+  --color-live: var(--live);
+  --color-success-fill: var(--success-fill);
+  --color-danger-fill: var(--danger-fill);
+  --color-info-border: var(--info-border);
+  --color-separator-hover: var(--separator-hover);
+  --color-icon-subtle: var(--icon-subtle);
+  --color-neutral-dot: var(--neutral-dot);
+  --color-overlay: var(--overlay);
+
+  --font-sans: 'Inter Variable', Inter, 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'JetBrains Mono', Consolas, ui-monospace, monospace;
+
+  --radius-sm: var(--zy-radius-sm);
+  --radius-md: var(--zy-radius-md);
+  --radius-lg: var(--zy-radius-lg);
+  --radius-xl: var(--zy-radius-xl);
+  --radius-pill: var(--zy-radius-pill);
+
+  --shadow-sm: var(--zy-shadow-sm);
+  --shadow-md: var(--zy-shadow-md);
+  --shadow-lg: var(--zy-shadow-lg);
+  --shadow-focus: var(--focus-ring);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-surface-app font-sans text-text antialiased;
+    font-size: 15px;
+    line-height: 1.6;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  /* Tailwind 4 resets buttons to the default arrow; everything clickable shows the hand cursor. */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='menuitem'],
+  a[href],
+  summary,
+  select:not(:disabled),
+  label:has(input[type='checkbox']:not(:disabled)),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-strong;
+    text-wrap: balance;
+  }
+  a {
+    @apply text-link underline-offset-2 hover:underline;
+  }
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-text);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  /* Candidate content must never be printed. */
+  @media print {
+    body * {
+      visibility: hidden !important;
+    }
+  }
+}
+
+/* Rendered markdown (question statements, instructions, legal texts). */
+@layer components {
+  .markdown {
+    line-height: 1.65;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .markdown > * + * {
+    margin-top: 0.75em;
+  }
+  .markdown h1 {
+    font-size: 1.35rem;
+    font-weight: 600;
+  }
+  .markdown h2 {
+    font-size: 1.12rem;
+    font-weight: 600;
+    margin-top: 1.4em;
+  }
+  .markdown h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1.2em;
+  }
+  .markdown h2:first-child,
+  .markdown h3:first-child {
+    margin-top: 0;
+  }
+  .markdown ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+  }
+  .markdown ol {
+    list-style: decimal;
+    padding-left: 1.4rem;
+  }
+  .markdown li + li {
+    margin-top: 0.3em;
+  }
+  .markdown strong {
+    color: var(--text-strong);
+    font-weight: 600;
+  }
+  .markdown hr {
+    border-color: var(--border);
+    margin: 1.4em 0;
+  }
+}
+
+@layer utilities {
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .bg-gradient-hero {
+    background-image: var(--gradient-hero);
+  }
+  .bg-gradient-spectrum {
+    background-image: var(--gradient-spectrum);
+  }
+}

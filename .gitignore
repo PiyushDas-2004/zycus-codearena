@@ -1,0 +1,41 @@
+# Dependencies and build output
+node_modules/
+dist/
+dist-mock/
+coverage/
+*.tsbuildinfo
+
+# Environment — NEVER commit real keys. Only .env.example is tracked.
+.env
+.env.*
+!.env.example
+!.env.mock
+!.env.localstack
+
+# Local tooling
+.DS_Store
+Thumbs.db
+*.log
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Supabase CLI local state
+supabase/.branches/
+supabase/.temp/
+
+# Candidate backup files and exports must never be committed
+*.codearena-backup
+exports/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Generated SQL bundle (rebuild with npm run sql:bundle)
+supabase/dist/

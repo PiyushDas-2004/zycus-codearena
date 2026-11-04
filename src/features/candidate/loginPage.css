@@ -1,0 +1,62 @@
+/*
+ * Candidate sign-in page only (imported by LoginPage, so it ships in the sign-in chunk, never on
+ * admin pages): the white card over a pitch-black flight through the Milky Way (SpaceBackdrop).
+ * Colours are tokens from src/design/tokens.css.
+ */
+.login-sky {
+  position: relative;
+  isolation: isolate;
+  overflow-x: clip;
+  background: var(--space-black);
+}
+.login-sky > :not(.login-space) {
+  position: relative;
+  z-index: 1;
+}
+
+.login-space {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--space-black);
+}
+.login-space-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Without WebGL2: a still star field. */
+.login-space-stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0.7;
+  --star: color-mix(in srgb, var(--zy-white) 85%, transparent);
+  background-image:
+    radial-gradient(circle at 12% 18%, var(--star) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 37% 72%, var(--star) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 64% 31%, var(--star) 0 0.5px, transparent 1px),
+    radial-gradient(circle at 81% 86%, var(--star) 0 0.8px, transparent 1.3px),
+    radial-gradient(circle at 91% 12%, var(--star) 0 0.6px, transparent 1.1px),
+    radial-gradient(circle at 53% 93%, var(--star) 0 0.5px, transparent 1px);
+  background-size: 300px 300px;
+}
+
+.login-card {
+  border-radius: var(--zy-radius-xl);
+  background: var(--surface);
+  box-shadow:
+    var(--zy-shadow-lg),
+    0 0 0 1px color-mix(in srgb, var(--zy-white) 14%, transparent);
+}
+
+.login-footer footer,
+.login-credit,
+.login-credit a {
+  color: var(--text-on-scene-muted);
+}
+.login-credit a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

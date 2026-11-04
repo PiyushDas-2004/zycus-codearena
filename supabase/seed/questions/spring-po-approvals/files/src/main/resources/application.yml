@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: po-approvals
+  datasource:
+    url: jdbc:postgresql://localhost:5432/procurement
+    username: procurement
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+server:
+  error:
+    include-message: always

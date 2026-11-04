@@ -1,0 +1,101 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "a7dcbe6c-f122-4051-8368-41c2659815d7",
+  "slug": "rn-live-auction",
+  "version": 3,
+  "title": "Live Reverse Auction: timers, listeners and rendering (React Native)",
+  "category": "React Native debugging",
+  "role_tags": [
+    "lead-react-native-developer",
+    "react-native-developer"
+  ],
+  "skill_tags": [
+    "react-native",
+    "timers",
+    "app-state",
+    "navigation",
+    "performance",
+    "money"
+  ],
+  "difficulty": "hard",
+  "time_suggestion_minutes": 35,
+  "is_sample": false,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    {
+      "path": "src/screens/AuctionScreen.tsx",
+      "language": "typescript",
+      "content": "@file:files/src/screens/AuctionScreen.tsx"
+    },
+    {
+      "path": "src/components/BidBoard.tsx",
+      "language": "typescript",
+      "content": "@file:files/src/components/BidBoard.tsx"
+    },
+    {
+      "path": "src/hooks/useCountdown.ts",
+      "language": "typescript",
+      "content": "@file:files/src/hooks/useCountdown.ts"
+    },
+    {
+      "path": "src/hooks/useAuctionListeners.ts",
+      "language": "typescript",
+      "content": "@file:files/src/hooks/useAuctionListeners.ts"
+    },
+    {
+      "path": "src/utils/money.ts",
+      "language": "typescript",
+      "content": "@file:files/src/utils/money.ts"
+    },
+    {
+      "path": "src/realtime/auctionSocket.ts",
+      "language": "typescript",
+      "content": "@file:files/src/realtime/auctionSocket.ts",
+      "readonly": true
+    },
+    {
+      "path": "src/debug/renderCounter.ts",
+      "language": "typescript",
+      "content": "@file:files/src/debug/renderCounter.ts",
+      "readonly": true
+    },
+    {
+      "path": "src/types.ts",
+      "language": "typescript",
+      "content": "@file:files/src/types.ts",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/useCountdown.test.ts",
+      "language": "typescript",
+      "content": "@file:files/__tests__/useCountdown.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/listeners.test.ts",
+      "language": "typescript",
+      "content": "@file:files/__tests__/listeners.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/BidBoard.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/BidBoard.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/money.test.ts",
+      "language": "typescript",
+      "content": "@file:files/__tests__/money.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "content": "@file:files/package.json",
+      "readonly": true
+    }
+  ],
+  "rubric": []
+}

@@ -1,0 +1,101 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "9249d0ed-6c2c-4ea4-80f9-48645dbf737a",
+  "slug": "rn-approvals-inbox",
+  "version": 3,
+  "title": "Approvals Inbox: session, networking and list state (React Native)",
+  "category": "React Native debugging",
+  "role_tags": [
+    "lead-react-native-developer",
+    "react-native-developer"
+  ],
+  "skill_tags": [
+    "react-native",
+    "async",
+    "auth",
+    "react-hooks",
+    "flatlist",
+    "concurrency"
+  ],
+  "difficulty": "hard",
+  "time_suggestion_minutes": 35,
+  "is_sample": false,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    {
+      "path": "src/api/httpClient.ts",
+      "language": "typescript",
+      "content": "@file:files/src/api/httpClient.ts"
+    },
+    {
+      "path": "src/auth/sessionStore.ts",
+      "language": "typescript",
+      "content": "@file:files/src/auth/sessionStore.ts"
+    },
+    {
+      "path": "src/hooks/useApprovals.ts",
+      "language": "typescript",
+      "content": "@file:files/src/hooks/useApprovals.ts"
+    },
+    {
+      "path": "src/state/approvals.ts",
+      "language": "typescript",
+      "content": "@file:files/src/state/approvals.ts"
+    },
+    {
+      "path": "src/screens/ApprovalsList.tsx",
+      "language": "typescript",
+      "content": "@file:files/src/screens/ApprovalsList.tsx"
+    },
+    {
+      "path": "src/types.ts",
+      "language": "typescript",
+      "content": "@file:files/src/types.ts",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/httpClient.test.ts",
+      "language": "typescript",
+      "content": "@file:files/__tests__/httpClient.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/sessionStore.test.ts",
+      "language": "typescript",
+      "content": "@file:files/__tests__/sessionStore.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/useApprovals.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/useApprovals.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/approvals.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/approvals.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/ApprovalsList.test.tsx",
+      "language": "typescript",
+      "content": "@file:files/__tests__/ApprovalsList.test.tsx",
+      "readonly": true
+    },
+    {
+      "path": "__tests__/support/fakeServer.ts",
+      "language": "typescript",
+      "content": "@file:files/__tests__/support/fakeServer.ts",
+      "readonly": true
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "content": "@file:files/package.json",
+      "readonly": true
+    }
+  ],
+  "rubric": []
+}

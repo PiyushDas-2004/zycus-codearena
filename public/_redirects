@@ -1,0 +1,2 @@
+# Single-page app: every path that is not a file opens the app (Netlify; Cloudflare Pages does this by itself).
+/*    /index.html    200

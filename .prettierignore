@@ -1,0 +1,11 @@
+dist
+dist-mock
+coverage
+node_modules
+public
+package-lock.json
+supabase/seed/seed.sql
+supabase/migrations/*.sql
+docs/*.html
+*.md
+supabase/seed/

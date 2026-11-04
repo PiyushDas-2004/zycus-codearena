@@ -1,0 +1,160 @@
+{
+  "format": "zycus-codearena/question@1",
+  "id": "04a206ea-655a-40fd-9651-b01088d59d98",
+  "slug": "spring-po-approvals",
+  "version": 3,
+  "title": "PO Approvals: transactions, idempotency and concurrency (Spring Boot)",
+  "category": "Spring Boot debugging",
+  "role_tags": [
+    "lead-react-native-developer",
+    "full-stack-developer",
+    "java-developer"
+  ],
+  "skill_tags": [
+    "spring-boot",
+    "spring-data-jpa",
+    "hibernate",
+    "transactions",
+    "idempotency",
+    "concurrency",
+    "postgresql"
+  ],
+  "difficulty": "hard",
+  "time_suggestion_minutes": 45,
+  "is_sample": false,
+  "status": "published",
+  "statement_md": "@file:statement.md",
+  "files": [
+    {
+      "path": "src/main/java/com/zycus/procurement/po/ApprovalService.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/ApprovalService.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PurchaseOrderController.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PurchaseOrderController.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/InvoiceMatcher.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/InvoiceMatcher.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PurchaseOrderRepository.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PurchaseOrderRepository.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/IdempotencyRecordRepository.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/IdempotencyRecordRepository.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PurchaseOrder.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PurchaseOrder.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/IdempotencyRecord.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/IdempotencyRecord.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/ApiExceptionHandler.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/ApiExceptionHandler.java"
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PurchaseOrderLine.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PurchaseOrderLine.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PoStatus.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PoStatus.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/Dtos.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/Dtos.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/BudgetService.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/BudgetService.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/BudgetExceededException.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/BudgetExceededException.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/java/com/zycus/procurement/po/PoNotFoundException.java",
+      "language": "java",
+      "content": "@file:files/src/main/java/com/zycus/procurement/po/PoNotFoundException.java",
+      "readonly": true
+    },
+    {
+      "path": "src/main/resources/application.yml",
+      "language": "yaml",
+      "content": "@file:files/src/main/resources/application.yml",
+      "readonly": true
+    },
+    {
+      "path": "src/test/java/com/zycus/procurement/po/ApprovalServiceIT.java",
+      "language": "java",
+      "content": "@file:files/src/test/java/com/zycus/procurement/po/ApprovalServiceIT.java",
+      "readonly": true
+    },
+    {
+      "path": "src/test/java/com/zycus/procurement/po/InvoiceMatcherTest.java",
+      "language": "java",
+      "content": "@file:files/src/test/java/com/zycus/procurement/po/InvoiceMatcherTest.java",
+      "readonly": true
+    },
+    {
+      "path": "checks/transactions.test.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/transactions.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "checks/approvals.test.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/approvals.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "checks/invoices.test.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/invoices.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "checks/inbox.test.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/inbox.test.ts",
+      "readonly": true
+    },
+    {
+      "path": "checks/support/java.ts",
+      "language": "typescript",
+      "content": "@file:files/checks/support/java.ts",
+      "readonly": true
+    },
+    {
+      "path": "pom.xml",
+      "language": "xml",
+      "content": "@file:files/pom.xml",
+      "readonly": true
+    }
+  ],
+  "rubric": []
+}
